@@ -158,13 +158,13 @@ export async function executeImport(
       // Commit le batch dans Firestore
       console.log('💾 Sauvegarde dans Firebase Firestore...');
       await batch.commit();
-      console.log('✅ Import terminé avec succès');
+      console.log(`✅ Import terminé avec succès: ${created} créés, ${updated} mis à jour, ${skipped} ignorés`);
     } catch (commitError: any) {
       console.error('❌ Erreur lors du commit:', commitError);
       
       // Analyser le type d'erreur
       if (commitError.code === 'permission-denied') {
-        errors.push('Permissions insuffisantes pour écrire dans la base de données. Contactez l\'administrateur.');
+        errors.push('ERREUR DE PERMISSIONS FIREBASE: Les règles de sécurité Firestore empêchent l\'écriture dans la collection "personnel". Veuillez configurer les règles Firebase pour autoriser les utilisateurs authentifiés à écrire dans cette collection. Consultez la documentation Firebase pour plus d\'informations.');
       } else if (commitError.code === 'unauthenticated') {
         errors.push('Utilisateur non authentifié. Veuillez vous reconnecter.');
       } else {

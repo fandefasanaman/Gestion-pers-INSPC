@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { 
   Users, 
   Search, 
@@ -12,6 +13,8 @@ import {
 } from 'lucide-react';
 import PersonnelForm from '../Forms/PersonnelForm';
 import PersonnelImport from '../Import/PersonnelImport';
+import { db } from '../../lib/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 // Supprimer l'import X qui manque
 import { X } from 'lucide-react';
@@ -21,75 +24,98 @@ const Personnel: React.FC = () => {
   const [selectedService, setSelectedService] = useState('all');
   const [showPersonnelForm, setShowPersonnelForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [personnel, setPersonnel] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Mock personnel data
-  const personnel = [
-    {
-      id: '1',
-      firstName: 'Dr. Jean',
-      lastName: 'ANDRIANO',
-      email: 'jean.andriano@inspc.mg',
-      phone: '+261 34 12 345 67',
-      position: 'Chef de Service',
-      service: 'Service Médical',
-      registrationNumber: 'MED001',
-      role: 'service_chief',
-      isActive: true,
-      joinDate: '2020-01-15'
-    },
-    {
-      id: '2',
-      firstName: 'Marie',
-      lastName: 'RAKOTO',
-      email: 'marie.rakoto@inspc.mg',
-      phone: '+261 34 23 456 78',
-      position: 'Responsable RH',
-      service: 'Ressources Humaines',
-      registrationNumber: 'RH001',
-      role: 'hr',
-      isActive: true,
-      joinDate: '2019-03-10'
-    },
-    {
-      id: '3',
-      firstName: 'Hery',
-      lastName: 'RASOLOFO',
-      email: 'hery.rasolofo@inspc.mg',
-      phone: '+261 34 34 567 89',
-      position: 'Technicien Médical',
-      service: 'Service Médical',
-      registrationNumber: 'MED002',
-      role: 'employee',
-      isActive: true,
-      joinDate: '2021-06-01'
-    },
-    {
-      id: '4',
-      firstName: 'Nivo',
-      lastName: 'RANDRIAMIARANA',
-      email: 'nivo.randriamiarana@inspc.mg',
-      phone: '+261 34 45 678 90',
-      position: 'Assistant Administratif',
-      service: 'Administration',
-      registrationNumber: 'ADM002',
-      role: 'employee',
-      isActive: true,
-      joinDate: '2022-02-15'
-    },
-    {
-      id: '5',
-      firstName: 'Lova',
-      lastName: 'RAMANAMPISOA',
-      email: 'lova.ramanampisoa@inspc.mg',
-      phone: '+261 34 56 789 01',
-      position: 'Infirmière',
-      service: 'Service Médical',
-      registrationNumber: 'MED003',
-      role: 'employee',
-      isActive: true,
-      joinDate: '2021-09-20'
+  // Charger les données personnel depuis Firebase
+  const fetchPersonnel = async () => {
+    try {
+      setLoading(true);
+      const personnelQuery = query(
+        collection(db, 'personnel'),
+        orderBy('nom', 'asc')
+      );
+      
+      const querySnapshot = await getDocs(personnelQuery);
+      const personnelData = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          firstName: data.prenoms || '',
+          lastName: data.nom || '',
+          email: data.email || '',
+          phone: data.telephone || '+261 XX XX XX XX',
+          position: data.fonction || '',
+          service: getServiceLabel(data.service) || 'Non défini',
+          registrationNumber: data.im || '',
+          role: data.role || 'employee',
+          isActive: data.actif !== false,
+          joinDate: data.date_entree_inspc || data.created_at || new Date().toISOString()
+        };
+      });
+      
+      setPersonnel(personnelData);
+      console.log(`✅ ${personnelData.length} personnel(s) chargé(s) depuis Firebase`);
+    } catch (error) {
+      console.error('Erreur lors du chargement du personnel:', error);
+      // En cas d'erreur, garder les données mockées comme fallback
+      setPersonnel([
+        {
+          id: '1',
+          firstName: 'Dr. Jean',
+          lastName: 'ANDRIANO',
+          email: 'jean.andriano@inspc.mg',
+          phone: '+261 34 12 345 67',
+          position: 'Chef de Service',
+          service: 'Service Médical',
+          registrationNumber: 'MED001',
+          role: 'service_chief',
+          isActive: true,
+          joinDate: '2020-01-15'
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Charger les données au montage du composant et lors des rafraîchissements
+  useEffect(() => {
+    fetchPersonnel();
+  }, [refreshKey]);
+
+  // Fonction pour rafraîchir les données
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
+  // Fonction pour gérer la fermeture de l'import avec rafraîchissement
+  const handleImportClose = () => {
+    setShowImportModal(false);
+    // Rafraîchir les données après fermeture de l'import
+    setTimeout(() => {
+      handleRefresh();
+    }, 500);
+  };
+
+  // Convertir les codes de service en labels lisibles
+  const getServiceLabel = (serviceCode: string) => {
+    const serviceMap: Record<string, string> = {
+      'direction_generale': 'Direction Générale',
+      'daaf': 'Direction Administrative et Financière',
+      'dfr': 'Direction de la Formation et de la Recherche',
+      'service_informatique': 'Service Informatique',
+      'service_documentation': 'Service Documentation/Bibliothèque',
+      'service_logistique': 'Service Logistique',
+      'service_securite': 'Service Sécurité',
+      'service_medical': 'Service Médical',
+      'service_pedagogique': 'Service Pédagogique et Scientifique',
+      'service_administratif': 'Service Administratif',
+      'service_financier': 'Service Financier'
+    };
+    return serviceMap[serviceCode] || serviceCode;
+  };
 
   const services = [
     'Service Médical',
@@ -147,6 +173,14 @@ const Personnel: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Personnel</h1>
         <div className="flex items-center space-x-3">
           <button 
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            <Users className="w-4 h-4" />
+            <span>{loading ? 'Actualisation...' : 'Actualiser'}</span>
+          </button>
+          <button 
             onClick={() => setShowImportModal(true)}
             className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
@@ -165,6 +199,12 @@ const Personnel: React.FC = () => {
 
       {/* Search and Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        {loading && (
+          <div className="mb-4 flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+            <span className="text-gray-600">Chargement du personnel...</span>
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -200,7 +240,8 @@ const Personnel: React.FC = () => {
       </div>
 
       {/* Personnel Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {!loading && (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredPersonnel.map((person) => (
           <div key={person.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center space-x-4 mb-4">
@@ -254,7 +295,8 @@ const Personnel: React.FC = () => {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {filteredPersonnel.length === 0 && (
         <div className="text-center py-12">
@@ -267,6 +309,7 @@ const Personnel: React.FC = () => {
       {/* Summary Stats */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Statistiques</h2>
+        {!loading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
             <p className="text-2xl font-bold text-blue-600">{personnel.length}</p>
@@ -285,6 +328,7 @@ const Personnel: React.FC = () => {
             <p className="text-sm text-orange-600">Chefs Service</p>
           </div>
         </div>
+        )}
       </div>
 
       {/* Personnel Form Modal */}
@@ -306,14 +350,14 @@ const Personnel: React.FC = () => {
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">Import Personnel Excel</h2>
               <button
-                onClick={() => setShowImportModal(false)}
+                onClick={handleImportClose}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             <div className="p-6">
-              <PersonnelImport />
+              <PersonnelImport onImportSuccess={handleRefresh} />
             </div>
           </div>
         </div>

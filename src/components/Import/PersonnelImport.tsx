@@ -28,7 +28,11 @@ interface ImportResult {
   warnings: string[];
 }
 
-const PersonnelImport: React.FC = () => {
+interface PersonnelImportProps {
+  onImportSuccess?: () => void;
+}
+
+const PersonnelImport: React.FC<PersonnelImportProps> = ({ onImportSuccess }) => {
   const [previewData, setPreviewData] = useState<ProcessedEmployeeData[]>([]);
   const [importing, setImporting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -112,6 +116,10 @@ const PersonnelImport: React.FC = () => {
       
       if (result.success) {
         setPreviewData([]);
+        // Notifier le parent du succès de l'import
+        if (onImportSuccess) {
+          onImportSuccess();
+        }
       } else {
         console.error('Erreurs d\'import:', result.errors);
       }
@@ -122,7 +130,7 @@ const PersonnelImport: React.FC = () => {
       
       if (error instanceof Error) {
         if (error.message.includes('permission-denied')) {
-          errorMessage = 'Permissions insuffisantes pour importer les données. Contactez l\'administrateur système.';
+          errorMessage = 'ERREUR DE CONFIGURATION FIREBASE:\n\nLes règles de sécurité Firestore empêchent l\'import des données.\n\nPour résoudre ce problème:\n1. Allez dans votre Console Firebase\n2. Naviguez vers "Firestore Database" → "Rules"\n3. Modifiez les règles pour autoriser l\'écriture dans la collection "personnel"\n\nExemple de règle:\nallow write: if request.auth != null;\n\nContactez votre administrateur système si nécessaire.';
         } else if (error.message.includes('unauthenticated')) {
           errorMessage = 'Session expirée. Veuillez vous reconnecter et réessayer.';
         } else {
@@ -130,7 +138,16 @@ const PersonnelImport: React.FC = () => {
         }
       }
       
-      alert(errorMessage);
+      // Afficher une alerte plus détaillée pour les erreurs de permissions
+      if (errorMessage.includes('FIREBASE')) {
+        const shouldShowDetails = confirm(errorMessage + '\n\nVoulez-vous voir les détails techniques?');
+        if (shouldShowDetails) {
+          console.error('Détails de l\'erreur Firebase:', error);
+          alert('Détails techniques affichés dans la console du navigateur (F12)');
+        }
+      } else {
+        alert(errorMessage);
+      }
     } finally {
       setImporting(false);
     }
@@ -432,7 +449,8 @@ const PersonnelImport: React.FC = () => {
                     Import réussi!
                   </h3>
                   <p className="text-sm text-green-700">
-                    {importResult.created} nouveaux employés créés, {importResult.updated} mis à jour.
+                    {importResult.created} nouveaux employés créés, {importResult.updated} mis à jour. 
+                    Les données seront actualisées automatiquement dans la liste du personnel.
                   </p>
                 </div>
               )}
@@ -443,7 +461,7 @@ const PersonnelImport: React.FC = () => {
                 onClick={() => setShowResult(false)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Fermer
+                {importResult.success ? 'Fermer et actualiser' : 'Fermer'}
               </button>
             </div>
           </div>
