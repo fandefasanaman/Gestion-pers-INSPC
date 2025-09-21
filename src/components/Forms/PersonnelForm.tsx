@@ -98,17 +98,18 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
 
   // Services INSPC
   const servicesINSPC = [
-    { value: 'direction_generale', label: 'Direction Générale' },
-    { value: 'daaf', label: 'Direction Administrative et Financière' },
-    { value: 'dfr', label: 'Direction de la Formation et de la Recherche' },
-    { value: 'service_informatique', label: 'Service Informatique' },
-    { value: 'service_documentation', label: 'Service Documentation/Bibliothèque' },
-    { value: 'service_logistique', label: 'Service Logistique' },
-    { value: 'service_securite', label: 'Service Sécurité' },
-    { value: 'service_medical', label: 'Service Médical' },
-    { value: 'service_pedagogique', label: 'Service Pédagogique et Scientifique' },
-    { value: 'service_administratif', label: 'Service Administratif' },
-    { value: 'service_financier', label: 'Service Financier' }
+    // Directions
+    { value: 'dg', label: 'Direction Générale (DG)' },
+    { value: 'daaf', label: 'Direction des Affaires Administratives et Financières (DAAF)' },
+    { value: 'dfr', label: 'Direction Formation et Recherche (DFR)' },
+    // Services
+    { value: 'sps', label: 'Service Pédagogique et Scientifique (SPS)' },
+    { value: 'sf', label: 'Service Financier (SF)' },
+    { value: 'sa', label: 'Service Administratif (SA)' },
+    { value: 'sdoc', label: 'Service Documentation (SDoc)' },
+    // Unités
+    { value: 'unite_echographie', label: 'Unité d\'Échographie' },
+    { value: 'unite_acupuncture', label: 'Unité d\'Acupuncture' }
   ];
 
   // Auto-génération du numéro séquentiel
@@ -660,9 +661,21 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
                       }`}
                     >
                       <option value="">Sélectionner un service</option>
-                      {servicesINSPC.map((service) => (
-                        <option key={service.value} value={service.value}>{service.label}</option>
-                      ))}
+                      <optgroup label="Directions">
+                        <option value="dg">Direction Générale (DG)</option>
+                        <option value="daaf">Direction des Affaires Administratives et Financières (DAAF)</option>
+                        <option value="dfr">Direction Formation et Recherche (DFR)</option>
+                      </optgroup>
+                      <optgroup label="Services">
+                        <option value="sps">Service Pédagogique et Scientifique (SPS)</option>
+                        <option value="sf">Service Financier (SF)</option>
+                        <option value="sa">Service Administratif (SA)</option>
+                        <option value="sdoc">Service Documentation (SDoc)</option>
+                      </optgroup>
+                      <optgroup label="Unités">
+                        <option value="unite_echographie">Unité d'Échographie</option>
+                        <option value="unite_acupuncture">Unité d'Acupuncture</option>
+                      </optgroup>
                     </select>
                   </div>
                   {errors.service && (

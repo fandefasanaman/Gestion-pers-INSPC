@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           prenoms: 'Système',
           email: email,
           role: 'admin',
-          service: 'Administration',
+          service: 'Direction Générale (DG)',
           actif: true
         };
         setPersonnel(defaultPersonnel);
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         prenoms: 'Système',
         email: email,
         role: 'admin',
-        service: 'Administration',
+        service: 'Direction Générale (DG)',
         actif: true
       };
       setPersonnel(defaultPersonnel);

@@ -73,7 +73,7 @@ export const createTestUser = async () => {
       prenoms: 'Système',
       email: 'admin@inspc.mg',
       role: 'admin',
-      service: 'Administration',
+      service: 'dg',
       actif: true,
       created_at: new Date(),
       updated_at: new Date()

@@ -53,7 +53,7 @@ const Dashboard: React.FC = () => {
       type: 'Congé annuel',
       status: 'pending',
       date: '2024-03-15',
-      service: 'Service Médical'
+      service: 'Service Pédagogique et Scientifique (SPS)'
     },
     {
       id: '2',
@@ -61,7 +61,7 @@ const Dashboard: React.FC = () => {
       type: 'Mission',
       status: 'approved',
       date: '2024-03-18',
-      service: 'Administration'
+      service: 'Service Administratif (SA)'
     },
     {
       id: '3',
@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
       type: 'Formation',
       status: 'pending',
       date: '2024-03-20',
-      service: 'Service Médical'
+      service: 'Direction Formation et Recherche (DFR)'
     }
   ];
 

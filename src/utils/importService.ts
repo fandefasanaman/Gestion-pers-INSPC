@@ -333,24 +333,40 @@ export async function exportPersonnelData(): Promise<void> {
         'CORPS', 'GRADE', 'INDICE', 'FONCTION', 'DATE ENTREE INSPC', 
         'EMAIL', 'SERVICE', 'ROLE', 'ACTIF'
       ],
-      ...personnel.map((p: any, index) => [
-        index + 1,
-        p.nom,
-        p.prenoms,
-        p.im,
-        p.date_naissance || '',
-        p.lieu || '',
-        p.cin || '',
-        p.corps || '',
-        p.grade || '',
-        p.indice || '',
-        p.fonction || '',
-        p.date_entree_inspc || '',
-        p.email,
-        p.service || '',
-        p.role || '',
-        p.actif ? 'OUI' : 'NON'
-      ])
+      ...personnel.map((p: any, index) => {
+        // Convertir les codes de service en labels lisibles
+        const serviceMap: Record<string, string> = {
+          'dg': 'Direction Générale (DG)',
+          'daaf': 'Direction des Affaires Administratives et Financières (DAAF)',
+          'dfr': 'Direction Formation et Recherche (DFR)',
+          'sps': 'Service Pédagogique et Scientifique (SPS)',
+          'sf': 'Service Financier (SF)',
+          'sa': 'Service Administratif (SA)',
+          'sdoc': 'Service Documentation (SDoc)',
+          'unite_echographie': 'Unité d\'Échographie',
+          'unite_acupuncture': 'Unité d\'Acupuncture'
+        };
+        const serviceLabel = serviceMap[p.service] || p.service || '';
+        
+        return [
+          index + 1,
+          p.nom,
+          p.prenoms,
+          p.im,
+          p.date_naissance || '',
+          p.lieu || '',
+          p.cin || '',
+          p.corps || '',
+          p.grade || '',
+          p.indice || '',
+          p.fonction || '',
+          p.date_entree_inspc || '',
+          p.email,
+          serviceLabel,
+          p.role || '',
+          p.actif ? 'OUI' : 'NON'
+        ];
+      })
     ];
 
     const csvContent = exportData.map(row => row.join(',')).join('\n');

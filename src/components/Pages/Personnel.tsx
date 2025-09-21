@@ -102,27 +102,35 @@ const Personnel: React.FC = () => {
   // Convertir les codes de service en labels lisibles
   const getServiceLabel = (serviceCode: string) => {
     const serviceMap: Record<string, string> = {
-      'direction_generale': 'Direction Générale',
-      'daaf': 'Direction Administrative et Financière',
-      'dfr': 'Direction de la Formation et de la Recherche',
-      'service_informatique': 'Service Informatique',
-      'service_documentation': 'Service Documentation/Bibliothèque',
-      'service_logistique': 'Service Logistique',
-      'service_securite': 'Service Sécurité',
-      'service_medical': 'Service Médical',
-      'service_pedagogique': 'Service Pédagogique et Scientifique',
-      'service_administratif': 'Service Administratif',
-      'service_financier': 'Service Financier'
+      // Directions
+      'dg': 'Direction Générale (DG)',
+      'daaf': 'Direction des Affaires Administratives et Financières (DAAF)',
+      'dfr': 'Direction Formation et Recherche (DFR)',
+      // Services
+      'sps': 'Service Pédagogique et Scientifique (SPS)',
+      'sf': 'Service Financier (SF)',
+      'sa': 'Service Administratif (SA)',
+      'sdoc': 'Service Documentation (SDoc)',
+      // Unités
+      'unite_echographie': 'Unité d\'Échographie',
+      'unite_acupuncture': 'Unité d\'Acupuncture'
     };
     return serviceMap[serviceCode] || serviceCode;
   };
 
   const services = [
-    'Service Médical',
-    'Ressources Humaines',
-    'Administration',
-    'Laboratoire',
-    'Pharmacie'
+    // Directions
+    'Direction Générale (DG)',
+    'Direction des Affaires Administratives et Financières (DAAF)',
+    'Direction Formation et Recherche (DFR)',
+    // Services
+    'Service Pédagogique et Scientifique (SPS)',
+    'Service Financier (SF)',
+    'Service Administratif (SA)',
+    'Service Documentation (SDoc)',
+    // Unités
+    'Unité d\'Échographie',
+    'Unité d\'Acupuncture'
   ];
 
   const getRoleLabel = (role: string) => {
@@ -226,9 +234,21 @@ const Personnel: React.FC = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
               <option value="all">Tous les services</option>
-              {services.map((service) => (
-                <option key={service} value={service}>{service}</option>
-              ))}
+              <optgroup label="Directions">
+                <option value="Direction Générale (DG)">Direction Générale (DG)</option>
+                <option value="Direction des Affaires Administratives et Financières (DAAF)">Direction des Affaires Administratives et Financières (DAAF)</option>
+                <option value="Direction Formation et Recherche (DFR)">Direction Formation et Recherche (DFR)</option>
+              </optgroup>
+              <optgroup label="Services">
+                <option value="Service Pédagogique et Scientifique (SPS)">Service Pédagogique et Scientifique (SPS)</option>
+                <option value="Service Financier (SF)">Service Financier (SF)</option>
+                <option value="Service Administratif (SA)">Service Administratif (SA)</option>
+                <option value="Service Documentation (SDoc)">Service Documentation (SDoc)</option>
+              </optgroup>
+              <optgroup label="Unités">
+                <option value="Unité d'Échographie">Unité d'Échographie</option>
+                <option value="Unité d'Acupuncture">Unité d'Acupuncture</option>
+              </optgroup>
             </select>
             
             <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">

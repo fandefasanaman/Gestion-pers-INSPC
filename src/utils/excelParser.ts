@@ -109,43 +109,55 @@ export function generateEmail(nom: string, prenoms: string): string {
 export function determineService(fonction: string): string {
   const fonctionLower = fonction.toLowerCase();
   
-  if (fonctionLower.includes('directeur') || fonctionLower.includes('direction')) {
-    return 'Direction Générale';
+  // Directions
+  if (fonctionLower.includes('directeur général') || fonctionLower.includes('direction générale')) {
+    return 'Direction Générale (DG)';
   }
-  if (fonctionLower.includes('rh') || fonctionLower.includes('ressources humaines')) {
-    return 'Ressources Humaines';
+  if (fonctionLower.includes('daaf') || fonctionLower.includes('affaires administratives') || fonctionLower.includes('affaires financières')) {
+    return 'Direction des Affaires Administratives et Financières (DAAF)';
   }
-  if (fonctionLower.includes('informatique') || fonctionLower.includes('développeur')) {
-    return 'Informatique';
-  }
-  if (fonctionLower.includes('médical') || fonctionLower.includes('médecin') || fonctionLower.includes('épidémio')) {
-    return 'Service Médical';
-  }
-  if (fonctionLower.includes('laboratoire') || fonctionLower.includes('labo')) {
-    return 'Laboratoire';
-  }
-  if (fonctionLower.includes('finance') || fonctionLower.includes('comptable')) {
-    return 'Finances';
-  }
-  if (fonctionLower.includes('recherche')) {
-    return 'Recherche';
+  if (fonctionLower.includes('dfr') || fonctionLower.includes('formation') || fonctionLower.includes('recherche')) {
+    return 'Direction Formation et Recherche (DFR)';
   }
   
-  return 'Administration';
+  // Services
+  if (fonctionLower.includes('pédagogique') || fonctionLower.includes('scientifique') || fonctionLower.includes('sps')) {
+    return 'Service Pédagogique et Scientifique (SPS)';
+  }
+  if (fonctionLower.includes('financier') || fonctionLower.includes('comptable') || fonctionLower.includes('budget')) {
+    return 'Service Financier (SF)';
+  }
+  if (fonctionLower.includes('administratif') || fonctionLower.includes('secrétariat') || fonctionLower.includes('administration')) {
+    return 'Service Administratif (SA)';
+  }
+  if (fonctionLower.includes('documentation') || fonctionLower.includes('bibliothèque') || fonctionLower.includes('archive')) {
+    return 'Service Documentation (SDoc)';
+  }
+  
+  // Unités
+  if (fonctionLower.includes('échographie') || fonctionLower.includes('echographie')) {
+    return 'Unité d\'Échographie';
+  }
+  if (fonctionLower.includes('acupuncture')) {
+    return 'Unité d\'Acupuncture';
+  }
+  
+  // Par défaut
+  return 'Service Administratif (SA)';
 }
 
 // Déterminer le rôle basé sur la fonction
 export function determineRole(fonction: string): 'personnel' | 'chef_service' | 'rh' | 'admin' {
   const fonctionLower = fonction.toLowerCase();
   
-  if (fonctionLower.includes('directeur') || fonctionLower.includes('administrateur')) {
+  if (fonctionLower.includes('directeur général') || fonctionLower.includes('administrateur')) {
     return 'admin';
   }
-  if (fonctionLower.includes('rh') || fonctionLower.includes('ressources humaines')) {
-    return 'rh';
-  }
-  if (fonctionLower.includes('chef') || fonctionLower.includes('responsable')) {
+  if (fonctionLower.includes('directeur') || fonctionLower.includes('chef de service') || fonctionLower.includes('responsable')) {
     return 'chef_service';
+  }
+  if (fonctionLower.includes('daaf') && (fonctionLower.includes('directeur') || fonctionLower.includes('responsable'))) {
+    return 'rh';
   }
   
   return 'personnel';
