@@ -12,7 +12,8 @@ import {
   Briefcase,
   Hash,
   Users,
-  CheckCircle
+  CheckCircle,
+  Phone
 } from 'lucide-react';
 import { UserRole } from '../../types';
 import { db } from '../../lib/firebase';
@@ -33,6 +34,7 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     im: '',
     dateNaissance: '',
     lieuNaissance: '',
+    telephone: '',
     cin: '',
     dateCIN: '',
     lieuCIN: '',
@@ -118,7 +120,13 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     { value: 'unite_acupuncture', label: 'Unité d\'Acupuncture' }
   ];
 
-  // Auto-génération du numéro séquentiel
+  // Fonction pour formater l'IM (remplacer virgule par espace)
+  const formatIM = (im: string) => {
+    if (!im) return '';
+    return im.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+  };
+
+  // Auto-génération du numéro séquentiel et chargement des données
   useEffect(() => {
     if (isOpen) {
       if (editData) {
@@ -128,9 +136,10 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
           numero: editData.registrationNumber || '',
           nom: editData.lastName || '',
           prenoms: editData.firstName || '',
-          im: editData.registrationNumber || '',
+          im: formatIM(editData.registrationNumber || ''),
           dateNaissance: editData.joinDate ? editData.joinDate.split('T')[0] : '',
           lieuNaissance: editData.lieu || '',
+          telephone: editData.phone || '',
           cin: editData.cin || '',
           dateCIN: editData.dateCin ? editData.dateCin.split('T')[0] : '',
           lieuCIN: editData.lieuCin || '',
@@ -169,20 +178,21 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     return serviceMap[serviceLabel];
   };
 
-  // Auto-génération de l'email
-  useEffect(() => {
+  // Auto-génération de l'email (optionnelle, peut être modifiée manuellement)
+  const generateEmail = () => {
     if (formData.prenoms && formData.nom) {
       const prenomFormatted = formData.prenoms.toLowerCase().split(' ')[0];
       const nomFormatted = formData.nom.toLowerCase();
       const email = `${prenomFormatted}.${nomFormatted}@inspc.mg`;
       setFormData(prev => ({ ...prev, email }));
     }
-  }, [formData.prenoms, formData.nom]);
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
     // Validations obligatoires
+    if (!formData.numero.trim()) newErrors.numero = 'Le numéro est obligatoire';
     if (!formData.nom.trim()) newErrors.nom = 'Le nom est obligatoire';
     if (!formData.prenoms.trim()) newErrors.prenoms = 'Les prénoms sont obligatoires';
     if (!formData.im.trim()) newErrors.im = 'L\'IM est obligatoire';
@@ -195,10 +205,16 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     if (!formData.fonction.trim()) newErrors.fonction = 'La fonction est obligatoire';
     if (!formData.dateEntreeINSPC) newErrors.dateEntreeINSPC = 'La date d\'entrée INSPC est obligatoire';
     if (!formData.service) newErrors.service = 'Le service est obligatoire';
+    if (!formData.email.trim()) newErrors.email = 'L\'email est obligatoire';
 
     // Validation format email
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Format d\'email invalide';
+    }
+
+    // Validation format téléphone
+    if (formData.telephone && !/^\+261\s?\d{2}\s?\d{2}\s?\d{3}\s?\d{2}$/.test(formData.telephone)) {
+      newErrors.telephone = 'Format téléphone invalide (+261 XX XX XXX XX)';
     }
 
     // Validation CIN format malgache (12 chiffres)
@@ -243,20 +259,22 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     setShowSuccessMessage(false);
     
     try {
+      // Préparer toutes les données pour la sauvegarde
       const personnelData = {
-        nom: formData.nom.toUpperCase(), // Nom en majuscules
+        nom: formData.nom.toUpperCase(),
         prenoms: formData.prenoms,
-        im: formData.im,
+        im: formatIM(formData.im),
         date_naissance: formData.dateNaissance,
         lieu: formData.lieuNaissance,
+        telephone: formData.telephone,
         cin: formData.cin,
-        date_cin: formData.dateCIN,
+        date_cin: formData.dateCIN || null,
         lieu_cin: formData.lieuCIN,
         corps: formData.corps,
         grade: formData.grade,
         indice: Number(formData.indice),
         imputation_budgetaire: formData.imputationBudgetaire,
-        date_entree_admin: formData.dateEntreeAdmin,
+        date_entree_admin: formData.dateEntreeAdmin || null,
         fonction: formData.fonction,
         date_entree_inspc: formData.dateEntreeINSPC,
         service: formData.service,
@@ -266,14 +284,14 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
       };
       
       if (editData && editData.id) {
-        // Mode édition - Mettre à jour le document existant
+        // Mode édition - Mettre à jour TOUS les champs
         const docRef = doc(db, 'personnel', editData.id);
         await updateDoc(docRef, personnelData);
         
         setSuccessMessage('Personnel modifié avec succès !');
         console.log(`✅ Personnel ${formData.nom} ${formData.prenoms} mis à jour avec succès`);
       } else {
-        // Mode création - Créer un nouveau document
+        // Mode création - Créer un nouveau document avec TOUS les champs
         const newPersonnelData = {
           ...personnelData,
           created_at: new Date()
@@ -297,13 +315,11 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
       setTimeout(() => {
         setShowSuccessMessage(false);
         onClose();
-        
-        // Reset form
         resetForm();
       }, 2000);
       
     } catch (error) {
-      console.error('Erreur lors de la création du personnel:', error);
+      console.error('Erreur lors de la sauvegarde du personnel:', error);
       
       // Gestion des erreurs spécifiques
       let errorMessage = 'Erreur lors de la sauvegarde';
@@ -331,6 +347,7 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
       im: '',
       dateNaissance: '',
       lieuNaissance: '',
+      telephone: '',
       cin: '',
       dateCIN: '',
       lieuCIN: '',
@@ -355,12 +372,6 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     onClose();
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR');
-  };
-
   const availableGrades = gradesByCorps[formData.corps] || gradesByCorps.default;
 
   if (!isOpen) return null;
@@ -373,8 +384,9 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
             {editData ? 'Modifier Personnel INSPC' : 'Nouveau Personnel INSPC'}
           </h2>
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-purple-800 rounded-lg transition-colors"
+            onClick={handleCancel}
+            disabled={loading}
+            className="p-2 hover:bg-purple-800 rounded-lg transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5 text-white" />
           </button>
@@ -409,10 +421,18 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
                   <input
                     type="text"
                     value={formData.numero}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    onChange={(e) => setFormData(prev => ({ ...prev, numero: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                      errors.numero ? 'border-red-300' : 'border-gray-300'
+                    }`}
                     placeholder="001"
                   />
+                  {errors.numero && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.numero}
+                    </p>
+                  )}
                 </div>
 
                 <div className="md:col-span-1">
@@ -465,7 +485,7 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
                   <input
                     type="text"
                     value={formData.im}
-                    onChange={(e) => setFormData(prev => ({ ...prev, im: e.target.value }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, im: formatIM(e.target.value) }))}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
                       errors.im ? 'border-red-300' : 'border-gray-300'
                     }`}
@@ -491,7 +511,7 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
               </h3>
             </div>
             <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Date de naissance <span className="text-red-500">*</span>
@@ -535,6 +555,30 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
                     <p className="mt-1 text-sm text-red-600 flex items-center">
                       <AlertCircle className="w-4 h-4 mr-1" />
                       {errors.lieuNaissance}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Téléphone
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="tel"
+                      value={formData.telephone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, telephone: e.target.value }))}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                        errors.telephone ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="+261 XX XX XX XX"
+                    />
+                  </div>
+                  {errors.telephone && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.telephone}
                     </p>
                   )}
                 </div>
@@ -818,18 +862,33 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email professionnel
+                    Email professionnel <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <input
                       type="email"
                       value={formData.email}
-                      disabled
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                        errors.email ? 'border-red-300' : 'border-gray-300'
+                      }`}
                       placeholder="felix.alain@inspc.mg"
                     />
+                    <button
+                      type="button"
+                      onClick={generateEmail}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
+                    >
+                      Auto
+                    </button>
                   </div>
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
               </div>
 

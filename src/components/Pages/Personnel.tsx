@@ -12,7 +12,8 @@ import {
   UserCheck,
   Edit,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Eye
 } from 'lucide-react';
 import PersonnelForm from '../Forms/PersonnelForm';
 import PersonnelImport from '../Import/PersonnelImport';
@@ -27,12 +28,20 @@ const Personnel: React.FC = () => {
   const [selectedService, setSelectedService] = useState('all');
   const [showPersonnelForm, setShowPersonnelForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingPersonnel, setViewingPersonnel] = useState<any>(null);
   const [personnel, setPersonnel] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingPersonnel, setEditingPersonnel] = useState<any>(null);
   const [deletingPersonnel, setDeletingPersonnel] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Fonction pour formater l'IM (remplacer virgule par espace)
+  const formatIM = (im: string) => {
+    if (!im) return '';
+    return im.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+  };
 
   // Charger les données personnel depuis Firebase
   const fetchPersonnel = async () => {
@@ -54,10 +63,22 @@ const Personnel: React.FC = () => {
           phone: data.telephone || '+261 XX XX XX XX',
           position: data.fonction || '',
           service: getServiceLabel(data.service) || 'Non défini',
-          registrationNumber: data.im || '',
+          registrationNumber: formatIM(data.im) || '',
           role: data.role || 'employee',
           isActive: data.actif !== false,
-          joinDate: data.date_entree_inspc || data.created_at || new Date().toISOString()
+          joinDate: data.date_entree_inspc || data.created_at || new Date().toISOString(),
+          // Données complètes pour la vue détaillée
+          dateNaissance: data.date_naissance,
+          lieu: data.lieu,
+          cin: data.cin,
+          dateCin: data.date_cin,
+          lieuCin: data.lieu_cin,
+          corps: data.corps,
+          grade: data.grade,
+          indice: data.indice,
+          fonction: data.fonction,
+          dateEntreeAdmin: data.date_entree_admin,
+          dateEntreeINSPC: data.date_entree_inspc
         };
       });
       
@@ -75,7 +96,7 @@ const Personnel: React.FC = () => {
           phone: '+261 34 12 345 67',
           position: 'Chef de Service',
           service: 'Service Médical',
-          registrationNumber: 'MED001',
+          registrationNumber: formatIM('MED001'),
           role: 'service_chief',
           isActive: true,
           joinDate: '2020-01-15'
@@ -100,6 +121,12 @@ const Personnel: React.FC = () => {
   const handleEditPersonnel = (person: any) => {
     setEditingPersonnel(person);
     setShowPersonnelForm(true);
+  };
+
+  // Fonction pour voir les détails d'un personnel
+  const handleViewPersonnel = (person: any) => {
+    setViewingPersonnel(person);
+    setShowViewModal(true);
   };
 
   // Fonction pour gérer la sauvegarde réussie
@@ -318,6 +345,13 @@ const Personnel: React.FC = () => {
             <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="flex items-center space-x-2">
                 <button
+                  onClick={() => handleViewPersonnel(person)}
+                  className="p-2 bg-green-100 hover:bg-green-200 text-green-600 rounded-lg transition-colors"
+                  title="Voir"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => handleEditPersonnel(person)}
                   className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors"
                   title="Modifier"
@@ -379,7 +413,7 @@ const Personnel: React.FC = () => {
                   {getRoleLabel(person.role)}
                 </span>
                 <span className="text-xs text-gray-500">
-                  Matricule: {person.registrationNumber}
+                  Matricule: {formatIM(person.registrationNumber)}
                 </span>
               </div>
             </div>
@@ -447,6 +481,198 @@ const Personnel: React.FC = () => {
             </div>
             <div className="p-6">
               <PersonnelImport onImportSuccess={handleRefresh} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de vue détaillée */}
+      {showViewModal && viewingPersonnel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-green-600 to-green-700">
+              <h2 className="text-xl font-semibold text-white">
+                Détails du Personnel - {viewingPersonnel.firstName} {viewingPersonnel.lastName}
+              </h2>
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="p-2 hover:bg-green-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Section 1: Informations d'identification */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-t-lg">
+                  <h3 className="text-lg font-medium flex items-center">
+                    <Hash className="w-5 h-5 mr-2" />
+                    Informations d'identification
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">N°</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.registrationNumber}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                      <p className="text-sm text-gray-900 font-medium">{viewingPersonnel.lastName}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Prénoms</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.firstName}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">IM</label>
+                      <p className="text-sm text-gray-900">{formatIM(viewingPersonnel.registrationNumber)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: État civil */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-t-lg">
+                  <h3 className="text-lg font-medium flex items-center">
+                    <User className="w-5 h-5 mr-2" />
+                    État civil
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
+                      <p className="text-sm text-gray-900">
+                        {viewingPersonnel.dateNaissance ? new Date(viewingPersonnel.dateNaissance).toLocaleDateString('fr-FR') : 'Non renseigné'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Lieu de naissance</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.lieu || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.phone}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">CIN</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.cin || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date CIN</label>
+                      <p className="text-sm text-gray-900">
+                        {viewingPersonnel.dateCin ? new Date(viewingPersonnel.dateCin).toLocaleDateString('fr-FR') : 'Non renseigné'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Lieu CIN</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.lieuCin || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Informations professionnelles */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-t-lg">
+                  <h3 className="text-lg font-medium flex items-center">
+                    <Briefcase className="w-5 h-5 mr-2" />
+                    Informations professionnelles
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Corps</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.corps || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.grade || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Indice</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.indice || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date entrée administration</label>
+                      <p className="text-sm text-gray-900">
+                        {viewingPersonnel.dateEntreeAdmin ? new Date(viewingPersonnel.dateEntreeAdmin).toLocaleDateString('fr-FR') : 'Non renseigné'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 4: Affectation INSPC */}
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-t-lg">
+                  <h3 className="text-lg font-medium flex items-center">
+                    <Building className="w-5 h-5 mr-2" />
+                    Affectation INSPC
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Fonction</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.position}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date entrée INSPC</label>
+                      <p className="text-sm text-gray-900">
+                        {viewingPersonnel.dateEntreeINSPC ? new Date(viewingPersonnel.dateEntreeINSPC).toLocaleDateString('fr-FR') : 'Non renseigné'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.service}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email professionnel</label>
+                      <p className="text-sm text-blue-600">{viewingPersonnel.email}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(viewingPersonnel.role)}`}>
+                        {getRoleLabel(viewingPersonnel.role)}
+                      </span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        viewingPersonnel.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {viewingPersonnel.isActive ? 'Actif' : 'Inactif'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  handleEditPersonnel(viewingPersonnel);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Edit className="w-4 h-4" />
+                <span>Modifier</span>
+              </button>
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-300"
+              >
+                Fermer
+              </button>
             </div>
           </div>
         </div>

@@ -52,7 +52,7 @@ export interface ValidationResult {
 
 // Nettoyer l'IM (retirer espaces)
 export function cleanIM(im: string | number | undefined): string {
-  return (im || '').toString().replace(/\s+/g, '').trim();
+  return (im || '').toString().replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 // Nettoyer le CIN

@@ -311,6 +311,9 @@ const Reports: React.FC = () => {
                           <div className="text-sm font-medium text-gray-900">
                             {person.firstName} {person.lastName}
                           </div>
+                          <div className="text-xs text-gray-500">
+                            IM: {person.registrationNumber ? person.registrationNumber.replace(/,/g, ' ') : 'N/A'}
+                          </div>
                         </div>
                       </div>
                     </td>

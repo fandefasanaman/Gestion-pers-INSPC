@@ -352,7 +352,7 @@ export async function exportPersonnelData(): Promise<void> {
           index + 1,
           p.nom,
           p.prenoms,
-          p.im,
+          p.im ? p.im.replace(/,/g, ' ') : '',
           p.date_naissance || '',
           p.lieu || '',
           p.cin || '',
