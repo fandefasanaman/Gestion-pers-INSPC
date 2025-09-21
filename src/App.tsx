@@ -8,6 +8,7 @@ import Movements from './components/Pages/Movements';
 import Personnel from './components/Pages/Personnel';
 import Validations from './components/Pages/Validations';
 import Notifications from './components/Pages/Notifications';
+import Reports from './components/Pages/Reports';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
@@ -36,7 +37,7 @@ const AppContent: React.FC = () => {
       case 'validations':
         return <Validations />;
       case 'reports':
-        return <div className="p-8 text-center text-gray-500">Page des rapports en développement</div>;
+        return <Reports />;
       case 'services':
         return <div className="p-8 text-center text-gray-500">Page des services en développement</div>;
       case 'settings':

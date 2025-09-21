@@ -19,9 +19,10 @@ interface PersonnelFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (personnel: any) => void;
+  editData?: any;
 }
 
-const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit }) => {
+const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit, editData }) => {
   const [formData, setFormData] = useState({
     numero: '',
     nom: '',
@@ -115,11 +116,52 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
   // Auto-génération du numéro séquentiel
   useEffect(() => {
     if (isOpen) {
-      // Simuler la récupération du prochain numéro
-      const nextNumber = Math.floor(Math.random() * 1000) + 1;
-      setFormData(prev => ({ ...prev, numero: nextNumber.toString().padStart(3, '0') }));
+      if (editData) {
+        // Mode édition - charger les données existantes
+        setFormData({
+          numero: editData.registrationNumber || '',
+          nom: editData.lastName || '',
+          prenoms: editData.firstName || '',
+          im: editData.registrationNumber || '',
+          dateNaissance: editData.joinDate ? editData.joinDate.split('T')[0] : '',
+          lieuNaissance: editData.lieu || '',
+          cin: '',
+          dateCIN: '',
+          lieuCIN: '',
+          corps: '',
+          grade: '',
+          indice: '',
+          imputationBudgetaire: '00-71-9-110-00000',
+          dateEntreeAdmin: '',
+          fonction: editData.position || '',
+          dateEntreeINSPC: editData.joinDate ? editData.joinDate.split('T')[0] : '',
+          service: getServiceCode(editData.service) || '',
+          email: editData.email || '',
+          statut: editData.isActive ? 'actif' : 'inactif'
+        });
+      } else {
+        // Mode création - générer un nouveau numéro
+        const nextNumber = Math.floor(Math.random() * 1000) + 1;
+        setFormData(prev => ({ ...prev, numero: nextNumber.toString().padStart(3, '0') }));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, editData]);
+
+  // Fonction pour convertir le label de service en code
+  const getServiceCode = (serviceLabel: string) => {
+    const serviceMap: Record<string, string> = {
+      'Direction Générale (DG)': 'dg',
+      'Direction des Affaires Administratives et Financières (DAAF)': 'daaf',
+      'Direction Formation et Recherche (DFR)': 'dfr',
+      'Service Pédagogique et Scientifique (SPS)': 'sps',
+      'Service Financier (SF)': 'sf',
+      'Service Administratif (SA)': 'sa',
+      'Service Documentation (SDoc)': 'sdoc',
+      'Unité d\'Échographie': 'unite_echographie',
+      'Unité d\'Acupuncture': 'unite_acupuncture'
+    };
+    return serviceMap[serviceLabel];
+  };
 
   // Auto-génération de l'email
   useEffect(() => {
@@ -252,7 +294,9 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto employee-modal">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-purple-700">
-          <h2 className="text-xl font-semibold text-white">Nouveau Personnel INSPC</h2>
+          <h2 className="text-xl font-semibold text-white">
+            {editData ? 'Modifier Personnel INSPC' : 'Nouveau Personnel INSPC'}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-purple-800 rounded-lg transition-colors"
@@ -743,7 +787,7 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              <span>Enregistrer</span>
+              <span>{editData ? 'Mettre à jour' : 'Enregistrer'}</span>
             </button>
           </div>
         </form>

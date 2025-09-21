@@ -9,12 +9,15 @@ import {
   Mail, 
   Phone,
   Building,
-  UserCheck
+  UserCheck,
+  Edit,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
 import PersonnelForm from '../Forms/PersonnelForm';
 import PersonnelImport from '../Import/PersonnelImport';
 import { db } from '../../lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
 
 // Supprimer l'import X qui manque
 import { X } from 'lucide-react';
@@ -27,6 +30,9 @@ const Personnel: React.FC = () => {
   const [personnel, setPersonnel] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [editingPersonnel, setEditingPersonnel] = useState<any>(null);
+  const [deletingPersonnel, setDeletingPersonnel] = useState<any>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Charger les données personnel depuis Firebase
   const fetchPersonnel = async () => {
@@ -88,6 +94,40 @@ const Personnel: React.FC = () => {
   // Fonction pour rafraîchir les données
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
+  };
+
+  // Fonction pour modifier un personnel
+  const handleEditPersonnel = (person: any) => {
+    setEditingPersonnel(person);
+    setShowPersonnelForm(true);
+  };
+
+  // Fonction pour supprimer un personnel
+  const handleDeletePersonnel = (person: any) => {
+    setDeletingPersonnel(person);
+    setShowDeleteConfirm(true);
+  };
+
+  // Confirmer la suppression
+  const confirmDelete = async () => {
+    if (!deletingPersonnel) return;
+
+    try {
+      await deleteDoc(doc(db, 'personnel', deletingPersonnel.id));
+      console.log(`✅ Personnel ${deletingPersonnel.firstName} ${deletingPersonnel.lastName} supprimé`);
+      handleRefresh();
+      setShowDeleteConfirm(false);
+      setDeletingPersonnel(null);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      alert('Erreur lors de la suppression du personnel');
+    }
+  };
+
+  // Annuler la suppression
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setDeletingPersonnel(null);
   };
 
   // Fonction pour gérer la fermeture de l'import avec rafraîchissement
@@ -263,7 +303,27 @@ const Personnel: React.FC = () => {
       {!loading && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredPersonnel.map((person) => (
-          <div key={person.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div key={person.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow relative group">
+            {/* Boutons d'action */}
+            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleEditPersonnel(person)}
+                  className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors"
+                  title="Modifier"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeletePersonnel(person)}
+                  className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
+                  title="Supprimer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center space-x-4 mb-4">
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-semibold text-lg">
@@ -354,13 +414,18 @@ const Personnel: React.FC = () => {
       {/* Personnel Form Modal */}
       <PersonnelForm
         isOpen={showPersonnelForm}
-        onClose={() => setShowPersonnelForm(false)}
+        onClose={() => {
+          setShowPersonnelForm(false);
+          setEditingPersonnel(null);
+        }}
         onSubmit={(personnel) => {
           // TODO: Implement personnel creation logic
           console.log('Nouveau personnel créé:', personnel);
           // Here you would typically call an API to create the personnel
           // and then refresh the personnel list
+          handleRefresh();
         }}
+        editData={editingPersonnel}
       />
 
       {/* Import Modal */}
@@ -378,6 +443,41 @@ const Personnel: React.FC = () => {
             </div>
             <div className="p-6">
               <PersonnelImport onImportSuccess={handleRefresh} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmation de suppression */}
+      {showDeleteConfirm && deletingPersonnel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                Confirmer la suppression
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
+                Êtes-vous sûr de vouloir supprimer <strong>{deletingPersonnel.firstName} {deletingPersonnel.lastName}</strong> ?
+                <br />
+                <span className="text-sm text-red-600">Cette action est irréversible.</span>
+              </p>
+              <div className="flex items-center justify-end space-x-3">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-300"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Confirmer la suppression
+                </button>
+              </div>
             </div>
           </div>
         </div>
