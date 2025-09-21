@@ -102,6 +102,16 @@ const Personnel: React.FC = () => {
     setShowPersonnelForm(true);
   };
 
+  // Fonction pour gérer la sauvegarde réussie
+  const handlePersonnelSaved = () => {
+    console.log('Personnel sauvegardé avec succès');
+    // Rafraîchir les données après sauvegarde
+    handleRefresh();
+    // Fermer le formulaire
+    setShowPersonnelForm(false);
+    setEditingPersonnel(null);
+  };
+
   // Fonction pour supprimer un personnel
   const handleDeletePersonnel = (person: any) => {
     setDeletingPersonnel(person);
@@ -418,13 +428,7 @@ const Personnel: React.FC = () => {
           setShowPersonnelForm(false);
           setEditingPersonnel(null);
         }}
-        onSubmit={(personnel) => {
-          // TODO: Implement personnel creation logic
-          console.log('Nouveau personnel créé:', personnel);
-          // Here you would typically call an API to create the personnel
-          // and then refresh the personnel list
-          handleRefresh();
-        }}
+        onSubmit={handlePersonnelSaved}
         editData={editingPersonnel}
       />
 

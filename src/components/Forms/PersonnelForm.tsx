@@ -11,9 +11,12 @@ import {
   CreditCard,
   Briefcase,
   Hash,
-  Users
+  Users,
+  CheckCircle
 } from 'lucide-react';
 import { UserRole } from '../../types';
+import { db } from '../../lib/firebase';
+import { doc, updateDoc, addDoc, collection } from 'firebase/firestore';
 
 interface PersonnelFormProps {
   isOpen: boolean;
@@ -47,6 +50,8 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Corps INSPC exhaustif
   const corpsOptions = [
@@ -118,6 +123,7 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     if (isOpen) {
       if (editData) {
         // Mode édition - charger les données existantes
+        console.log('Mode édition - Données reçues:', editData);
         setFormData({
           numero: editData.registrationNumber || '',
           nom: editData.lastName || '',
@@ -125,14 +131,14 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
           im: editData.registrationNumber || '',
           dateNaissance: editData.joinDate ? editData.joinDate.split('T')[0] : '',
           lieuNaissance: editData.lieu || '',
-          cin: '',
-          dateCIN: '',
-          lieuCIN: '',
-          corps: '',
-          grade: '',
-          indice: '',
+          cin: editData.cin || '',
+          dateCIN: editData.dateCin ? editData.dateCin.split('T')[0] : '',
+          lieuCIN: editData.lieuCin || '',
+          corps: editData.corps || '',
+          grade: editData.grade || '',
+          indice: editData.indice ? editData.indice.toString() : '',
           imputationBudgetaire: '00-71-9-110-00000',
-          dateEntreeAdmin: '',
+          dateEntreeAdmin: editData.dateEntreeAdmin ? editData.dateEntreeAdmin.split('T')[0] : '',
           fonction: editData.position || '',
           dateEntreeINSPC: editData.joinDate ? editData.joinDate.split('T')[0] : '',
           service: getServiceCode(editData.service) || '',
@@ -234,50 +240,119 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     }
     
     setLoading(true);
+    setShowSuccessMessage(false);
     
     try {
       const personnelData = {
-        ...formData,
-        indice: Number(formData.indice),
         nom: formData.nom.toUpperCase(), // Nom en majuscules
-        isActive: formData.statut === 'actif',
-        createdAt: new Date().toISOString()
+        prenoms: formData.prenoms,
+        im: formData.im,
+        date_naissance: formData.dateNaissance,
+        lieu: formData.lieuNaissance,
+        cin: formData.cin,
+        date_cin: formData.dateCIN,
+        lieu_cin: formData.lieuCIN,
+        corps: formData.corps,
+        grade: formData.grade,
+        indice: Number(formData.indice),
+        imputation_budgetaire: formData.imputationBudgetaire,
+        date_entree_admin: formData.dateEntreeAdmin,
+        fonction: formData.fonction,
+        date_entree_inspc: formData.dateEntreeINSPC,
+        service: formData.service,
+        email: formData.email,
+        actif: formData.statut === 'actif',
+        updated_at: new Date()
       };
       
+      if (editData && editData.id) {
+        // Mode édition - Mettre à jour le document existant
+        const docRef = doc(db, 'personnel', editData.id);
+        await updateDoc(docRef, personnelData);
+        
+        setSuccessMessage('Personnel modifié avec succès !');
+        console.log(`✅ Personnel ${formData.nom} ${formData.prenoms} mis à jour avec succès`);
+      } else {
+        // Mode création - Créer un nouveau document
+        const newPersonnelData = {
+          ...personnelData,
+          created_at: new Date()
+        };
+        
+        await addDoc(collection(db, 'personnel'), newPersonnelData);
+        
+        setSuccessMessage('Personnel créé avec succès !');
+        console.log(`✅ Personnel ${formData.nom} ${formData.prenoms} créé avec succès`);
+      }
+      
+      // Afficher le message de succès
+      setShowSuccessMessage(true);
+      
+      // Notifier le parent du succès
       if (onSubmit) {
         onSubmit(personnelData);
       }
       
-      onClose();
-      
-      // Reset form
-      setFormData({
-        numero: '',
-        nom: '',
-        prenoms: '',
-        im: '',
-        dateNaissance: '',
-        lieuNaissance: '',
-        cin: '',
-        dateCIN: '',
-        lieuCIN: '',
-        corps: '',
-        grade: '',
-        indice: '',
-        imputationBudgetaire: '00-71-9-110-00000',
-        dateEntreeAdmin: '',
-        fonction: '',
-        dateEntreeINSPC: '',
-        service: '',
-        email: '',
-        statut: 'actif'
-      });
+      // Fermer le modal après un délai
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+        onClose();
+        
+        // Reset form
+        resetForm();
+      }, 2000);
       
     } catch (error) {
       console.error('Erreur lors de la création du personnel:', error);
+      
+      // Gestion des erreurs spécifiques
+      let errorMessage = 'Erreur lors de la sauvegarde';
+      if (error instanceof Error) {
+        if (error.message.includes('permission-denied')) {
+          errorMessage = 'Permissions insuffisantes. Vérifiez vos droits d\'accès.';
+        } else if (error.message.includes('unauthenticated')) {
+          errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+        } else {
+          errorMessage = `Erreur: ${error.message}`;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      numero: '',
+      nom: '',
+      prenoms: '',
+      im: '',
+      dateNaissance: '',
+      lieuNaissance: '',
+      cin: '',
+      dateCIN: '',
+      lieuCIN: '',
+      corps: '',
+      grade: '',
+      indice: '',
+      imputationBudgetaire: '00-71-9-110-00000',
+      dateEntreeAdmin: '',
+      fonction: '',
+      dateEntreeINSPC: '',
+      service: '',
+      email: '',
+      statut: 'actif'
+    });
+    setErrors({});
+  };
+
+  const handleCancel = () => {
+    if (loading) return; // Empêcher la fermeture pendant la sauvegarde
+    
+    resetForm();
+    onClose();
   };
 
   const formatDate = (dateString: string) => {
@@ -306,6 +381,17 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Message de succès */}
+          {showSuccessMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+              <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+              <div>
+                <p className="text-green-800 font-medium">{successMessage}</p>
+                <p className="text-green-600 text-sm">Fermeture automatique dans quelques secondes...</p>
+              </div>
+            </div>
+          )}
+
           {/* Section 1: Informations d'identification */}
           <div className="bg-white border border-gray-200 rounded-lg">
             <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-t-lg">
@@ -772,22 +858,28 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
           <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
             <button
               type="button"
-              onClick={onClose}
-              className="px-6 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-300"
+              onClick={handleCancel}
+              disabled={loading}
+              className="px-6 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+              className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Sauvegarde...</span>
+                </>
               ) : (
-                <Save className="w-4 h-4" />
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>{editData ? 'Mettre à jour' : 'Enregistrer'}</span>
+                </>
               )}
-              <span>{editData ? 'Mettre à jour' : 'Enregistrer'}</span>
             </button>
           </div>
         </form>
