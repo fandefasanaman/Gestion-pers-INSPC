@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setPersonnel(defaultPersonnel);
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération du personnel:', error);
+      console.warn('Impossible de récupérer les données du personnel depuis Firestore. Utilisation des données par défaut.', error);
       // En cas d'erreur, utiliser des données par défaut
       const defaultPersonnel: Personnel = {
         id: user?.uid || '1',

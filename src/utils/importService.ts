@@ -45,18 +45,32 @@ export async function executeImport(
   try {
     console.log('🔥 Utilisation de Firebase Firestore (gpersinspc)');
     
+    // Vérifier si l'utilisateur est connecté
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Utilisateur non authentifié. Veuillez vous connecter pour importer des données.');
+    }
+    
     const batch = writeBatch(db);
     
     for (const employee of employees) {
       try {
-        // Vérifier si l'employé existe déjà (par IM) dans Firestore
-        const existingQuery = query(
-          collection(db, 'personnel'),
-          where('im', '==', employee.im)
-        );
+        let existingPersonnel = null;
         
-        const existingDocs = await getDocs(existingQuery);
-        const existingPersonnel = existingDocs.docs[0];
+        try {
+          // Vérifier si l'employé existe déjà (par IM) dans Firestore
+          const existingQuery = query(
+            collection(db, 'personnel'),
+            where('im', '==', employee.im)
+          );
+          
+          const existingDocs = await getDocs(existingQuery);
+          existingPersonnel = existingDocs.docs[0];
+        } catch (queryError: any) {
+          // Si erreur de permissions sur la lecture, continuer avec la création
+          console.warn(`Impossible de vérifier l'existence de l'employé ${employee.im}:`, queryError.message);
+          warnings.push(`Vérification d'existence impossible pour ${employee.nom} - création forcée`);
+        }
 
         if (existingPersonnel) {
           // L'employé existe déjà
@@ -65,11 +79,43 @@ export async function executeImport(
             warnings.push(`Employé ${employee.nom} ${employee.prenoms} (IM: ${employee.im}) ignoré - déjà existant`);
             continue;
           } else if (options.updateExisting) {
-            // Mettre à jour l'employé existant
-            const docRef = doc(db, 'personnel', existingPersonnel.id);
-            batch.update(docRef, {
+            try {
+              // Mettre à jour l'employé existant
+              const docRef = doc(db, 'personnel', existingPersonnel.id);
+              batch.update(docRef, {
+                nom: employee.nom,
+                prenoms: employee.prenoms,
+                date_naissance: employee.dateNaissance,
+                lieu: employee.lieu,
+                cin: employee.cin,
+                corps: employee.corps,
+                grade: employee.grade,
+                indice: employee.indice,
+                fonction: employee.fonction,
+                date_entree_inspc: employee.dateEntreeINSPC,
+                email: employee.email,
+                service: employee.service,
+                role: employee.role,
+                actif: employee.actif,
+                updated_at: new Date(),
+                updated_by: currentUser.uid
+              });
+              updated++;
+            } catch (updateError: any) {
+              errors.push(`Erreur mise à jour ${employee.nom}: ${updateError.message}`);
+            }
+          } else {
+            skipped++;
+            warnings.push(`Employé ${employee.nom} ${employee.prenoms} (IM: ${employee.im}) ignoré - déjà existant`);
+          }
+        } else {
+          try {
+            // Créer un nouvel employé
+            const docRef = doc(collection(db, 'personnel'), employee.id);
+            const personnelData = {
               nom: employee.nom,
               prenoms: employee.prenoms,
+              im: employee.im,
               date_naissance: employee.dateNaissance,
               lieu: employee.lieu,
               cin: employee.cin,
@@ -80,49 +126,27 @@ export async function executeImport(
               date_entree_inspc: employee.dateEntreeINSPC,
               email: employee.email,
               service: employee.service,
-              role: employee.role,
+              chef_service: 'ADMIN', // Valeur par défaut
               actif: employee.actif,
-              updated_at: new Date()
-            });
-            updated++;
-          } else {
-            skipped++;
-            warnings.push(`Employé ${employee.nom} ${employee.prenoms} (IM: ${employee.im}) ignoré - déjà existant`);
-          }
-        } else {
-          // Créer un nouvel employé
-          const docRef = doc(collection(db, 'personnel'), employee.id);
-          const personnelData = {
-            nom: employee.nom,
-            prenoms: employee.prenoms,
-            im: employee.im,
-            date_naissance: employee.dateNaissance,
-            lieu: employee.lieu,
-            cin: employee.cin,
-            corps: employee.corps,
-            grade: employee.grade,
-            indice: employee.indice,
-            fonction: employee.fonction,
-            date_entree_inspc: employee.dateEntreeINSPC,
-            email: employee.email,
-            service: employee.service,
-            chef_service: 'ADMIN', // Valeur par défaut
-            actif: employee.actif,
-            role: employee.role,
-            created_at: new Date(),
-            updated_at: new Date()
-          };
+              role: employee.role,
+              created_at: new Date(),
+              updated_at: new Date(),
+              created_by: currentUser.uid
+            };
 
-          batch.set(docRef, personnelData);
-          created++;
-          
-          // Créer un compte utilisateur Firebase Auth si demandé
-          if (options.createAccounts) {
-            try {
-              await createUserAccount(employee);
-            } catch (authError) {
-              warnings.push(`Compte utilisateur non créé pour ${employee.nom}: ${authError instanceof Error ? authError.message : 'Erreur inconnue'}`);
+            batch.set(docRef, personnelData);
+            created++;
+            
+            // Créer un compte utilisateur Firebase Auth si demandé
+            if (options.createAccounts) {
+              try {
+                await createUserAccount(employee);
+              } catch (authError) {
+                warnings.push(`Compte utilisateur non créé pour ${employee.nom}: ${authError instanceof Error ? authError.message : 'Erreur inconnue'}`);
+              }
             }
+          } catch (createError: any) {
+            errors.push(`Erreur création ${employee.nom}: ${createError.message}`);
           }
         }
       } catch (empError) {
@@ -130,9 +154,23 @@ export async function executeImport(
       }
     }
 
-    // Commit le batch dans Firestore
-    console.log('💾 Sauvegarde dans Firebase Firestore...');
-    await batch.commit();
+    try {
+      // Commit le batch dans Firestore
+      console.log('💾 Sauvegarde dans Firebase Firestore...');
+      await batch.commit();
+      console.log('✅ Import terminé avec succès');
+    } catch (commitError: any) {
+      console.error('❌ Erreur lors du commit:', commitError);
+      
+      // Analyser le type d'erreur
+      if (commitError.code === 'permission-denied') {
+        errors.push('Permissions insuffisantes pour écrire dans la base de données. Contactez l\'administrateur.');
+      } else if (commitError.code === 'unauthenticated') {
+        errors.push('Utilisateur non authentifié. Veuillez vous reconnecter.');
+      } else {
+        errors.push(`Erreur de sauvegarde: ${commitError.message}`);
+      }
+    }
 
     return {
       success: errors.length === 0,
@@ -145,13 +183,26 @@ export async function executeImport(
     };
 
   } catch (error) {
+    console.error('❌ Erreur générale d\'import:', error);
+    
+    let errorMessage = 'Erreur inconnue lors de l\'import';
+    if (error instanceof Error) {
+      if (error.message.includes('permission-denied')) {
+        errorMessage = 'Permissions insuffisantes. Vérifiez vos droits d\'accès à la base de données.';
+      } else if (error.message.includes('unauthenticated')) {
+        errorMessage = 'Utilisateur non authentifié. Veuillez vous reconnecter.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return {
       success: false,
       total: employees.length,
       created,
       updated,
       skipped,
-      errors: [error instanceof Error ? error.message : 'Erreur inconnue lors de l\'import'],
+      errors: [errorMessage],
       warnings
     };
   }
@@ -169,6 +220,13 @@ async function createUserAccount(employee: ProcessedEmployeeData): Promise<void>
     console.log(`👤 Compte Firebase Auth créé pour ${employee.email} avec mot de passe temporaire: ${tempPassword}`);
     
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('email-already-in-use')) {
+        throw new Error('Email déjà utilisé par un autre compte');
+      } else if (error.message.includes('weak-password')) {
+        throw new Error('Mot de passe trop faible');
+      }
+    }
     throw new Error(`Impossible de créer le compte utilisateur Firebase: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
   }
 }

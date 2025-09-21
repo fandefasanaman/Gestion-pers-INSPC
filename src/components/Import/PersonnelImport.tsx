@@ -99,27 +99,44 @@ const PersonnelImport: React.FC = () => {
       // Validation des données
       const validation = validateEmployeeData(previewData);
       if (!validation.isValid) {
-        alert(`Validation échouée:\n${validation.errors.join('\n')}`);
+        const errorMessage = `Validation échouée:\n${validation.errors.join('\n')}`;
+        console.error('Erreurs de validation:', validation.errors);
+        alert(errorMessage);
         return;
       }
 
-      // Simuler l'import (remplacer par l'appel API réel)
+      // Exécuter l'import avec Firebase
       const result = await performImport(previewData, options);
       setImportResult(result);
       setShowResult(true);
       
       if (result.success) {
         setPreviewData([]);
+      } else {
+        console.error('Erreurs d\'import:', result.errors);
       }
       
     } catch (error) {
-      alert(`Erreur lors de l'import: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      console.error('Erreur lors de l\'import:', error);
+      let errorMessage = 'Erreur inconnue lors de l\'import';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('permission-denied')) {
+          errorMessage = 'Permissions insuffisantes pour importer les données. Contactez l\'administrateur système.';
+        } else if (error.message.includes('unauthenticated')) {
+          errorMessage = 'Session expirée. Veuillez vous reconnecter et réessayer.';
+        } else {
+          errorMessage = `Erreur lors de l'import: ${error.message}`;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setImporting(false);
     }
   };
 
-  // Simulation de l'import (à remplacer par la vraie logique)
+  // Exécution de l'import avec Firebase
   const performImport = async (employees: ProcessedEmployeeData[], options: ImportOptions): Promise<ImportResult> => {
     return await executeImport(employees, options);
   };
