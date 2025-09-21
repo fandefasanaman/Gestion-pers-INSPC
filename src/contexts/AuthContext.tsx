@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { User } from 'firebase/auth';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
 import { Personnel } from '../types';
 
 interface AuthContextType {
@@ -19,49 +21,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchPersonnel(session.user.email!);
+    // Listen for auth changes with Firebase
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setUser(user);
+      if (user && user.email) {
+        await fetchPersonnel(user.email);
+      } else {
+        setPersonnel(null);
       }
       setLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchPersonnel(session.user.email!);
-        } else {
-          setPersonnel(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const fetchPersonnel = async (email: string) => {
-    const { data, error } = await supabase
-      .from('personnel')
-      .select('*')
-      .eq('email', email)
-      .single();
-    
-    if (data && !error) {
-      setPersonnel(data);
+    try {
+      // Pour l'instant, utiliser des données mock
+      // TODO: Implémenter la recherche dans Firestore
+      const mockPersonnel = {
+        id: '1',
+        nom: 'ADMIN',
+        prenoms: 'Système',
+        email: email,
+        role: 'admin',
+        service: 'Administration',
+        actif: true
+      };
+      setPersonnel(mockPersonnel);
+    } catch (error) {
+      console.error('Erreur lors de la récupération du personnel:', error);
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    return await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      return { data: { user: userCredential.user }, error: null };
+    } catch (error: any) {
+      return { data: null, error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(auth);
     setPersonnel(null);
   };
 

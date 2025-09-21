@@ -17,9 +17,12 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      await login(email, password);
+      const result = await login(email, password);
+      if (result.error) {
+        setError('Identifiants invalides');
+      }
     } catch (err) {
-      setError('Identifiants invalides');
+      setError('Erreur de connexion');
     } finally {
       setLoading(false);
     }
@@ -126,23 +129,21 @@ const Login: React.FC = () => {
 
         {/* Demo Accounts */}
         <div className="mt-8 border-t border-gray-200 pt-6">
-          <p className="text-xs text-center text-gray-500 mb-4">Comptes de démonstration:</p>
-          <div className="grid grid-cols-2 gap-2">
-            {demoAccounts.map((account, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setEmail(account.email);
-                  setPassword(account.password);
-                }}
-                className="text-xs text-left p-2 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-              >
-                <div className="font-medium text-gray-900">{account.role}</div>
-                <div className="text-gray-500 truncate">{account.email}</div>
-              </button>
-            ))}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-blue-600 text-sm font-medium">ℹ</span>
+                </div>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">Authentification Firebase</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  Utilisez vos identifiants Firebase pour vous connecter au système INSPC.
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-center text-gray-400 mt-2">Mot de passe: "password"</p>
         </div>
       </div>
     </div>

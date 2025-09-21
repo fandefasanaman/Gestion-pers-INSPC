@@ -13,6 +13,9 @@ import {
 import PersonnelForm from '../Forms/PersonnelForm';
 import PersonnelImport from '../Import/PersonnelImport';
 
+// Supprimer l'import X qui manque
+import { X } from 'lucide-react';
+
 const Personnel: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedService, setSelectedService] = useState('all');

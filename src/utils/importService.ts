@@ -1,4 +1,14 @@
-import { supabase } from '../lib/supabase';
+import { db, auth } from '../lib/firebase';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  writeBatch, 
+  query, 
+  where, 
+  getDocs 
+} from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { ProcessedEmployeeData } from './excelParser';
 
 export interface ImportOptions {
@@ -17,7 +27,7 @@ export interface ImportResult {
   warnings: string[];
 }
 
-// Fonction principale d'import vers Supabase
+// Fonction principale d'import vers Firebase Firestore
 export async function executeImport(
   employees: ProcessedEmployeeData[], 
   options: ImportOptions = {
@@ -33,20 +43,20 @@ export async function executeImport(
   const warnings: string[] = [];
 
   try {
+    console.log('🔥 Utilisation de Firebase Firestore (gpersinspc)');
+    
+    const batch = writeBatch(db);
+    
     for (const employee of employees) {
       try {
-        // Vérifier si l'employé existe déjà (par IM)
-        const { data: existingPersonnel, error: checkError } = await supabase
-          .from('personnel')
-          .select('id, im, nom, prenoms')
-          .eq('im', employee.im)
-          .single();
-
-        if (checkError && checkError.code !== 'PGRST116') {
-          // Erreur autre que "not found"
-          errors.push(`Erreur lors de la vérification pour ${employee.nom}: ${checkError.message}`);
-          continue;
-        }
+        // Vérifier si l'employé existe déjà (par IM) dans Firestore
+        const existingQuery = query(
+          collection(db, 'personnel'),
+          where('im', '==', employee.im)
+        );
+        
+        const existingDocs = await getDocs(existingQuery);
+        const existingPersonnel = existingDocs.docs[0];
 
         if (existingPersonnel) {
           // L'employé existe déjà
@@ -56,38 +66,32 @@ export async function executeImport(
             continue;
           } else if (options.updateExisting) {
             // Mettre à jour l'employé existant
-            const { error: updateError } = await supabase
-              .from('personnel')
-              .update({
-                nom: employee.nom,
-                prenoms: employee.prenoms,
-                date_naissance: employee.dateNaissance,
-                lieu: employee.lieu,
-                cin: employee.cin,
-                corps: employee.corps,
-                grade: employee.grade,
-                indice: employee.indice,
-                fonction: employee.fonction,
-                date_entree_inspc: employee.dateEntreeINSPC,
-                email: employee.email,
-                service: employee.service,
-                role: employee.role,
-                actif: employee.actif,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', existingPersonnel.id);
-
-            if (updateError) {
-              errors.push(`Erreur lors de la mise à jour de ${employee.nom}: ${updateError.message}`);
-            } else {
-              updated++;
-            }
+            const docRef = doc(db, 'personnel', existingPersonnel.id);
+            batch.update(docRef, {
+              nom: employee.nom,
+              prenoms: employee.prenoms,
+              date_naissance: employee.dateNaissance,
+              lieu: employee.lieu,
+              cin: employee.cin,
+              corps: employee.corps,
+              grade: employee.grade,
+              indice: employee.indice,
+              fonction: employee.fonction,
+              date_entree_inspc: employee.dateEntreeINSPC,
+              email: employee.email,
+              service: employee.service,
+              role: employee.role,
+              actif: employee.actif,
+              updated_at: new Date()
+            });
+            updated++;
           } else {
             skipped++;
             warnings.push(`Employé ${employee.nom} ${employee.prenoms} (IM: ${employee.im}) ignoré - déjà existant`);
           }
         } else {
           // Créer un nouvel employé
+          const docRef = doc(collection(db, 'personnel'), employee.id);
           const personnelData = {
             nom: employee.nom,
             prenoms: employee.prenoms,
@@ -104,25 +108,20 @@ export async function executeImport(
             service: employee.service,
             chef_service: 'ADMIN', // Valeur par défaut
             actif: employee.actif,
-            role: employee.role
+            role: employee.role,
+            created_at: new Date(),
+            updated_at: new Date()
           };
 
-          const { error: insertError } = await supabase
-            .from('personnel')
-            .insert(personnelData);
-
-          if (insertError) {
-            errors.push(`Erreur lors de la création de ${employee.nom}: ${insertError.message}`);
-          } else {
-            created++;
-            
-            // Créer un compte utilisateur si demandé
-            if (options.createAccounts) {
-              try {
-                await createUserAccount(employee);
-              } catch (authError) {
-                warnings.push(`Compte utilisateur non créé pour ${employee.nom}: ${authError instanceof Error ? authError.message : 'Erreur inconnue'}`);
-              }
+          batch.set(docRef, personnelData);
+          created++;
+          
+          // Créer un compte utilisateur Firebase Auth si demandé
+          if (options.createAccounts) {
+            try {
+              await createUserAccount(employee);
+            } catch (authError) {
+              warnings.push(`Compte utilisateur non créé pour ${employee.nom}: ${authError instanceof Error ? authError.message : 'Erreur inconnue'}`);
             }
           }
         }
@@ -130,6 +129,10 @@ export async function executeImport(
         errors.push(`Erreur pour ${employee.nom}: ${empError instanceof Error ? empError.message : 'Erreur inconnue'}`);
       }
     }
+
+    // Commit le batch dans Firestore
+    console.log('💾 Sauvegarde dans Firebase Firestore...');
+    await batch.commit();
 
     return {
       success: errors.length === 0,
@@ -154,34 +157,19 @@ export async function executeImport(
   }
 }
 
-// Créer un compte utilisateur Supabase
+// Créer un compte utilisateur Firebase Auth
 async function createUserAccount(employee: ProcessedEmployeeData): Promise<void> {
   // Générer un mot de passe temporaire
   const tempPassword = generateTempPassword();
   
   try {
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: employee.email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: {
-        nom: employee.nom,
-        prenoms: employee.prenoms,
-        im: employee.im,
-        service: employee.service,
-        role: employee.role
-      }
-    });
-
-    if (error) {
-      throw error;
-    }
-
+    const userCredential = await createUserWithEmailAndPassword(auth, employee.email, tempPassword);
+    
     // Ici vous pourriez envoyer un email avec les identifiants
-    console.log(`Compte créé pour ${employee.email} avec mot de passe temporaire: ${tempPassword}`);
+    console.log(`👤 Compte Firebase Auth créé pour ${employee.email} avec mot de passe temporaire: ${tempPassword}`);
     
   } catch (error) {
-    throw new Error(`Impossible de créer le compte utilisateur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    throw new Error(`Impossible de créer le compte utilisateur Firebase: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
   }
 }
 
@@ -267,22 +255,18 @@ export function downloadExcelTemplate(): void {
   }
 }
 
-// Fonction pour exporter les données actuelles
+// Fonction pour exporter les données actuelles depuis Firebase
 export async function exportPersonnelData(): Promise<void> {
   try {
-    const { data: personnel, error } = await supabase
-      .from('personnel')
-      .select('*')
-      .order('nom');
-
-    if (error) {
-      throw error;
-    }
-
-    if (!personnel || personnel.length === 0) {
+    const personnelQuery = query(collection(db, 'personnel'));
+    const querySnapshot = await getDocs(personnelQuery);
+    
+    if (querySnapshot.empty) {
       alert('Aucune donnée à exporter');
       return;
     }
+
+    const personnel = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     // Préparer les données pour l'export
     const exportData = [
@@ -291,7 +275,7 @@ export async function exportPersonnelData(): Promise<void> {
         'CORPS', 'GRADE', 'INDICE', 'FONCTION', 'DATE ENTREE INSPC', 
         'EMAIL', 'SERVICE', 'ROLE', 'ACTIF'
       ],
-      ...personnel.map((p, index) => [
+      ...personnel.map((p: any, index) => [
         index + 1,
         p.nom,
         p.prenoms,
