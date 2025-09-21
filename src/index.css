@@ -1,3 +1,53 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Styles spécifiques INSPC pour le modal Personnel */
+.employee-modal .ant-card-head {
+  background: linear-gradient(135deg, #6B2C91 0%, #8A4CB8 100%);
+  color: white;
+}
+
+.employee-modal .ant-form-item-required::before {
+  color: #DC143C !important;
+}
+
+.employee-modal .ant-btn-primary {
+  background-color: #6B2C91;
+  border-color: #6B2C91;
+}
+
+.employee-modal .ant-select-focused .ant-select-selector,
+.employee-modal .ant-input-focused {
+  border-color: #DAA520;
+  box-shadow: 0 0 0 2px rgba(218, 165, 32, 0.2);
+}
+
+/* Amélioration des couleurs pour les champs obligatoires */
+.employee-modal .text-red-500 {
+  color: #DC143C;
+}
+
+/* Style pour les sections avec en-têtes colorés */
+.employee-modal .bg-gradient-to-r {
+  background: linear-gradient(135deg, #6B2C91 0%, #8A4CB8 100%);
+}
+
+/* Focus states avec couleur dorée INSPC */
+.employee-modal input:focus,
+.employee-modal select:focus,
+.employee-modal textarea:focus {
+  border-color: #DAA520 !important;
+  box-shadow: 0 0 0 2px rgba(218, 165, 32, 0.2) !important;
+}
+
+/* Boutons avec couleurs INSPC */
+.employee-modal button[type="submit"] {
+  background-color: #6B2C91;
+  border-color: #6B2C91;
+}
+
+.employee-modal button[type="submit"]:hover {
+  background-color: #5A2478;
+  border-color: #5A2478;
+}

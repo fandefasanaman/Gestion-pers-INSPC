@@ -1,0 +1,742 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  X, 
+  User, 
+  Mail, 
+  Calendar,
+  MapPin,
+  Building,
+  Save,
+  AlertCircle,
+  CreditCard,
+  Briefcase,
+  Hash,
+  Users
+} from 'lucide-react';
+import { UserRole } from '../../types';
+
+interface PersonnelFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit?: (personnel: any) => void;
+}
+
+const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit }) => {
+  const [formData, setFormData] = useState({
+    numero: '',
+    nom: '',
+    prenoms: '',
+    im: '',
+    dateNaissance: '',
+    lieuNaissance: '',
+    cin: '',
+    dateCIN: '',
+    lieuCIN: '',
+    corps: '',
+    grade: '',
+    indice: '',
+    imputationBudgetaire: '00-71-9-110-00000',
+    dateEntreeAdmin: '',
+    fonction: '',
+    dateEntreeINSPC: '',
+    service: '',
+    email: '',
+    statut: 'actif'
+  });
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+
+  // Corps INSPC exhaustif
+  const corpsOptions = [
+    { value: 'medecin_cat8', label: 'Médecin DE de la CAT VIII' },
+    { value: 'medecin_cat9', label: 'Médecin DE de la CAT IX' },
+    { value: 'realisateur_adj', label: 'Réalisateur Adjoint' },
+    { value: 'concepteur', label: 'Concepteur' },
+    { value: 'physicien_cat9', label: 'Physicien contractuel de la CAT IX' },
+    { value: 'technicien_sup', label: 'Technicien Supérieur' },
+    { value: 'realisateur', label: 'Réalisateur' },
+    { value: 'sous_operateur', label: 'Sous Opérateur' },
+    { value: 'employe_service', label: 'Employé de Service' },
+    { value: 'operateur', label: 'Opérateur' },
+    { value: 'encadreur', label: 'Encadreur' },
+    { value: 'chauffeur', label: 'Chauffeur' },
+    { value: 'chargee_etudes_cat7', label: 'Chargée d\'études de la CAT VII' },
+    { value: 'ecd', label: 'ECD (Emploi Contractuel Décentralisé)' },
+    { value: 'eld', label: 'ELD (Emploi Local de Développement)' }
+  ];
+
+  // Grades selon le corps
+  const gradesByCorps: Record<string, { value: string; label: string }[]> = {
+    medecin_cat8: [
+      { value: 'stagiaire', label: 'Stagiaire' },
+      { value: '2/1', label: '2/1' },
+      { value: 'P/2', label: 'P/2' },
+      { value: 'PCE/1', label: 'PCE/1' }
+    ],
+    medecin_cat9: [
+      { value: 'stagiaire', label: 'Stagiaire' },
+      { value: '2/1', label: '2/1' },
+      { value: 'P/2', label: 'P/2' },
+      { value: 'PCE/1', label: 'PCE/1' },
+      { value: 'HCE/1', label: 'HCE/1' }
+    ],
+    technicien_sup: [
+      { value: 'stagiaire', label: 'Stagiaire' },
+      { value: '2/1', label: '2/1' },
+      { value: 'P/2', label: 'P/2' },
+      { value: 'PCE/1', label: 'PCE/1' }
+    ],
+    // Grades par défaut pour les autres corps
+    default: [
+      { value: 'stagiaire', label: 'Stagiaire' },
+      { value: '2/1', label: '2/1' },
+      { value: 'P/2', label: 'P/2' },
+      { value: 'PCE/1', label: 'PCE/1' }
+    ]
+  };
+
+  // Services INSPC
+  const servicesINSPC = [
+    { value: 'direction_generale', label: 'Direction Générale' },
+    { value: 'daaf', label: 'Direction Administrative et Financière' },
+    { value: 'dfr', label: 'Direction de la Formation et de la Recherche' },
+    { value: 'service_informatique', label: 'Service Informatique' },
+    { value: 'service_documentation', label: 'Service Documentation/Bibliothèque' },
+    { value: 'service_logistique', label: 'Service Logistique' },
+    { value: 'service_securite', label: 'Service Sécurité' },
+    { value: 'service_medical', label: 'Service Médical' },
+    { value: 'service_pedagogique', label: 'Service Pédagogique et Scientifique' },
+    { value: 'service_administratif', label: 'Service Administratif' },
+    { value: 'service_financier', label: 'Service Financier' }
+  ];
+
+  // Auto-génération du numéro séquentiel
+  useEffect(() => {
+    if (isOpen) {
+      // Simuler la récupération du prochain numéro
+      const nextNumber = Math.floor(Math.random() * 1000) + 1;
+      setFormData(prev => ({ ...prev, numero: nextNumber.toString().padStart(3, '0') }));
+    }
+  }, [isOpen]);
+
+  // Auto-génération de l'email
+  useEffect(() => {
+    if (formData.prenoms && formData.nom) {
+      const prenomFormatted = formData.prenoms.toLowerCase().split(' ')[0];
+      const nomFormatted = formData.nom.toLowerCase();
+      const email = `${prenomFormatted}.${nomFormatted}@inspc.mg`;
+      setFormData(prev => ({ ...prev, email }));
+    }
+  }, [formData.prenoms, formData.nom]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    // Validations obligatoires
+    if (!formData.nom.trim()) newErrors.nom = 'Le nom est obligatoire';
+    if (!formData.prenoms.trim()) newErrors.prenoms = 'Les prénoms sont obligatoires';
+    if (!formData.im.trim()) newErrors.im = 'L\'IM est obligatoire';
+    if (!formData.dateNaissance) newErrors.dateNaissance = 'La date de naissance est obligatoire';
+    if (!formData.lieuNaissance.trim()) newErrors.lieuNaissance = 'Le lieu de naissance est obligatoire';
+    if (!formData.cin.trim()) newErrors.cin = 'Le CIN est obligatoire';
+    if (!formData.corps) newErrors.corps = 'Le corps est obligatoire';
+    if (!formData.grade) newErrors.grade = 'Le grade est obligatoire';
+    if (!formData.indice.trim()) newErrors.indice = 'L\'indice est obligatoire';
+    if (!formData.fonction.trim()) newErrors.fonction = 'La fonction est obligatoire';
+    if (!formData.dateEntreeINSPC) newErrors.dateEntreeINSPC = 'La date d\'entrée INSPC est obligatoire';
+    if (!formData.service) newErrors.service = 'Le service est obligatoire';
+
+    // Validation format email
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Format d\'email invalide';
+    }
+
+    // Validation CIN format malgache (12 chiffres)
+    if (formData.cin && !/^\d{3}\s?\d{3}\s?\d{3}\s?\d{3}$/.test(formData.cin)) {
+      newErrors.cin = 'Format CIN invalide (XXX XXX XXX XXX)';
+    }
+
+    // Validation indice numérique
+    if (formData.indice && (isNaN(Number(formData.indice)) || Number(formData.indice) < 0)) {
+      newErrors.indice = 'L\'indice doit être un nombre positif';
+    }
+
+    // Validation cohérence des dates
+    if (formData.dateNaissance && formData.dateEntreeAdmin) {
+      const naissance = new Date(formData.dateNaissance);
+      const entreeAdmin = new Date(formData.dateEntreeAdmin);
+      if (naissance >= entreeAdmin) {
+        newErrors.dateEntreeAdmin = 'La date d\'entrée doit être postérieure à la naissance';
+      }
+    }
+
+    if (formData.dateEntreeAdmin && formData.dateEntreeINSPC) {
+      const entreeAdmin = new Date(formData.dateEntreeAdmin);
+      const entreeINSPC = new Date(formData.dateEntreeINSPC);
+      if (entreeAdmin > entreeINSPC) {
+        newErrors.dateEntreeINSPC = 'La date d\'entrée INSPC doit être postérieure à l\'entrée administration';
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const personnelData = {
+        ...formData,
+        indice: Number(formData.indice),
+        nom: formData.nom.toUpperCase(), // Nom en majuscules
+        isActive: formData.statut === 'actif',
+        createdAt: new Date().toISOString()
+      };
+      
+      if (onSubmit) {
+        onSubmit(personnelData);
+      }
+      
+      onClose();
+      
+      // Reset form
+      setFormData({
+        numero: '',
+        nom: '',
+        prenoms: '',
+        im: '',
+        dateNaissance: '',
+        lieuNaissance: '',
+        cin: '',
+        dateCIN: '',
+        lieuCIN: '',
+        corps: '',
+        grade: '',
+        indice: '',
+        imputationBudgetaire: '00-71-9-110-00000',
+        dateEntreeAdmin: '',
+        fonction: '',
+        dateEntreeINSPC: '',
+        service: '',
+        email: '',
+        statut: 'actif'
+      });
+      
+    } catch (error) {
+      console.error('Erreur lors de la création du personnel:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR');
+  };
+
+  const availableGrades = gradesByCorps[formData.corps] || gradesByCorps.default;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto employee-modal">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-purple-700">
+          <h2 className="text-xl font-semibold text-white">Nouveau Personnel INSPC</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-purple-800 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Section 1: Informations d'identification */}
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-t-lg">
+              <h3 className="text-lg font-medium flex items-center">
+                <Hash className="w-5 h-5 mr-2" />
+                Informations d'identification
+              </h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    N° <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.numero}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    placeholder="001"
+                  />
+                </div>
+
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nom}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value.toUpperCase() }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                      errors.nom ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="RAKOTO"
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                  {errors.nom && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.nom}
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Prénoms <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.prenoms}
+                    onChange={(e) => setFormData(prev => ({ ...prev, prenoms: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                      errors.prenoms ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Jean Pierre"
+                  />
+                  {errors.prenoms && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.prenoms}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    IM (Identité Matricule) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.im}
+                    onChange={(e) => setFormData(prev => ({ ...prev, im: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                      errors.im ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="498 445"
+                  />
+                  {errors.im && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.im}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: État civil */}
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-t-lg">
+              <h3 className="text-lg font-medium flex items-center">
+                <User className="w-5 h-5 mr-2" />
+                État civil
+              </h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date de naissance <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="date"
+                      value={formData.dateNaissance}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dateNaissance: e.target.value }))}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                        errors.dateNaissance ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                  </div>
+                  {errors.dateNaissance && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.dateNaissance}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lieu de naissance <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      value={formData.lieuNaissance}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lieuNaissance: e.target.value }))}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                        errors.lieuNaissance ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="Antananarivo"
+                    />
+                  </div>
+                  {errors.lieuNaissance && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.lieuNaissance}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    CIN <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      value={formData.cin}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cin: e.target.value }))}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                        errors.cin ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="101 234 567 890"
+                    />
+                  </div>
+                  {errors.cin && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.cin}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date CIN
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="date"
+                      value={formData.dateCIN}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dateCIN: e.target.value }))}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lieu CIN
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      value={formData.lieuCIN}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lieuCIN: e.target.value }))}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors"
+                      placeholder="Antananarivo"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Informations professionnelles */}
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-t-lg">
+              <h3 className="text-lg font-medium flex items-center">
+                <Briefcase className="w-5 h-5 mr-2" />
+                Informations professionnelles
+              </h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Corps <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.corps}
+                    onChange={(e) => setFormData(prev => ({ ...prev, corps: e.target.value, grade: '' }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                      errors.corps ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Sélectionner un corps</option>
+                    {corpsOptions.map((corps) => (
+                      <option key={corps.value} value={corps.value}>{corps.label}</option>
+                    ))}
+                  </select>
+                  {errors.corps && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.corps}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Grade <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.grade}
+                    onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                      errors.grade ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    disabled={!formData.corps}
+                  >
+                    <option value="">Sélectionner un grade</option>
+                    {availableGrades.map((grade) => (
+                      <option key={grade.value} value={grade.value}>{grade.label}</option>
+                    ))}
+                  </select>
+                  {errors.grade && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.grade}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Indice <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.indice}
+                    onChange={(e) => setFormData(prev => ({ ...prev, indice: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                      errors.indice ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="1600"
+                    min="0"
+                  />
+                  {errors.indice && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.indice}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Imputation budgétaire
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.imputationBudgetaire}
+                    onChange={(e) => setFormData(prev => ({ ...prev, imputationBudgetaire: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors"
+                    placeholder="00-71-9-110-00000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date entrée administration
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="date"
+                      value={formData.dateEntreeAdmin}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dateEntreeAdmin: e.target.value }))}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                        errors.dateEntreeAdmin ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                  </div>
+                  {errors.dateEntreeAdmin && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.dateEntreeAdmin}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Affectation INSPC */}
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-t-lg">
+              <h3 className="text-lg font-medium flex items-center">
+                <Building className="w-5 h-5 mr-2" />
+                Affectation INSPC
+              </h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fonction <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.fonction}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fonction: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                      errors.fonction ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Équipe de recherche"
+                  />
+                  {errors.fonction && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.fonction}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date entrée INSPC <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="date"
+                      value={formData.dateEntreeINSPC}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dateEntreeINSPC: e.target.value }))}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                        errors.dateEntreeINSPC ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                  </div>
+                  {errors.dateEntreeINSPC && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.dateEntreeINSPC}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Service <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <select
+                      value={formData.service}
+                      onChange={(e) => setFormData(prev => ({ ...prev, service: e.target.value }))}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors ${
+                        errors.service ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    >
+                      <option value="">Sélectionner un service</option>
+                      {servicesINSPC.map((service) => (
+                        <option key={service.value} value={service.value}>{service.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {errors.service && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.service}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email professionnel
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="email"
+                      value={formData.email}
+                      disabled
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                      placeholder="felix.alain@inspc.mg"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Statut
+                  </label>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <select
+                      value={formData.statut}
+                      onChange={(e) => setFormData(prev => ({ ...prev, statut: e.target.value }))}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors"
+                    >
+                      <option value="actif">Actif</option>
+                      <option value="inactif">Inactif</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-300"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>Enregistrer</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default PersonnelForm;

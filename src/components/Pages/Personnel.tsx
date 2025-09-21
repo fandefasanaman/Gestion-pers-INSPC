@@ -9,10 +9,12 @@ import {
   Building,
   UserCheck
 } from 'lucide-react';
+import PersonnelForm from '../Forms/PersonnelForm';
 
 const Personnel: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedService, setSelectedService] = useState('all');
+  const [showPersonnelForm, setShowPersonnelForm] = useState(false);
 
   // Mock personnel data
   const personnel = [
@@ -137,7 +139,10 @@ const Personnel: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Personnel</h1>
-        <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button 
+          onClick={() => setShowPersonnelForm(true)}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
           <Plus className="w-4 h-4" />
           <span>Nouveau Personnel</span>
         </button>
@@ -266,6 +271,18 @@ const Personnel: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Personnel Form Modal */}
+      <PersonnelForm
+        isOpen={showPersonnelForm}
+        onClose={() => setShowPersonnelForm(false)}
+        onSubmit={(personnel) => {
+          // TODO: Implement personnel creation logic
+          console.log('Nouveau personnel créé:', personnel);
+          // Here you would typically call an API to create the personnel
+          // and then refresh the personnel list
+        }}
+      />
     </div>
   );
 };
