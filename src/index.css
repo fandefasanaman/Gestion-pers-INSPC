@@ -51,3 +51,121 @@
   background-color: #5A2478;
   border-color: #5A2478;
 }
+
+/* Styles pour l'import Excel */
+.import-card {
+  margin: 20px;
+  box-shadow: 0 4px 12px rgba(107, 44, 145, 0.1);
+}
+
+.upload-section .ant-upload-drag {
+  border: 2px dashed #6B2C91;
+  border-radius: 12px;
+}
+
+.upload-section .ant-upload-drag:hover {
+  border-color: #DAA520;
+}
+
+.preview-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.import-config {
+  margin: 20px 0;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+}
+
+.action-buttons {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.import-result .ant-statistic-content-value {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Animation pour le drag & drop */
+.drag-active {
+  border-color: #3b82f6 !important;
+  background-color: #eff6ff !important;
+}
+
+/* Styles pour les tableaux d'aperçu */
+.preview-table {
+  font-size: 0.875rem;
+}
+
+.preview-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.preview-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* Styles pour les badges de service */
+.service-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* Styles pour les résultats d'import */
+.import-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.import-stat-card {
+  text-align: center;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.import-stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.import-stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Responsive design pour l'import */
+@media (max-width: 768px) {
+  .import-config {
+    grid-template-columns: 1fr;
+  }
+  
+  .import-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .preview-table {
+    font-size: 0.75rem;
+  }
+}

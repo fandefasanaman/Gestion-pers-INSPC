@@ -4,17 +4,20 @@ import {
   Search, 
   Filter, 
   Plus, 
+  Upload,
   Mail, 
   Phone,
   Building,
   UserCheck
 } from 'lucide-react';
 import PersonnelForm from '../Forms/PersonnelForm';
+import PersonnelImport from '../Import/PersonnelImport';
 
 const Personnel: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedService, setSelectedService] = useState('all');
   const [showPersonnelForm, setShowPersonnelForm] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Mock personnel data
   const personnel = [
@@ -139,13 +142,22 @@ const Personnel: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Personnel</h1>
-        <button 
-          onClick={() => setShowPersonnelForm(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nouveau Personnel</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Import Excel</span>
+          </button>
+          <button 
+            onClick={() => setShowPersonnelForm(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nouveau Personnel</span>
+          </button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -283,6 +295,26 @@ const Personnel: React.FC = () => {
           // and then refresh the personnel list
         }}
       />
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Import Personnel Excel</h2>
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6">
+              <PersonnelImport />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
