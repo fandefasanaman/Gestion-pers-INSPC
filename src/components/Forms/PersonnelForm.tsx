@@ -342,7 +342,6 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
 
   const resetForm = () => {
     setFormData({
-      numero: '',
       nom: '',
       prenoms: '',
       im: '',

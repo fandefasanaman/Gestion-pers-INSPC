@@ -200,7 +200,7 @@ const Reports: React.FC = () => {
       description: 'Historique des affectations et mutations',
       icon: Activity,
       color: 'bg-purple-500',
-      count: 0
+      count: 3
     },
     {
       id: 'formations',
@@ -208,7 +208,7 @@ const Reports: React.FC = () => {
       description: 'Formations suivies par le personnel',
       icon: GraduationCap,
       color: 'bg-orange-500',
-      count: 0
+      count: 3
     },
     {
       id: 'presences',

@@ -519,7 +519,7 @@ const Personnel: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">N°</label>
-                      <p className="text-sm text-gray-900">{viewingPersonnel.numero || viewingPersonnel.registrationNumber}</p>
+                      <p className="text-sm text-gray-900">{personnel.findIndex(p => p.id === viewingPersonnel.id) + 1}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
