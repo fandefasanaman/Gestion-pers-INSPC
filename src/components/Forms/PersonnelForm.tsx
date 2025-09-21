@@ -261,6 +261,7 @@ const PersonnelForm: React.FC<PersonnelFormProps> = ({ isOpen, onClose, onSubmit
     try {
       // Préparer toutes les données pour la sauvegarde
       const personnelData = {
+        numero: formData.numero, // Inclure le numéro dans la sauvegarde
         nom: formData.nom.toUpperCase(),
         prenoms: formData.prenoms,
         im: formatIM(formData.im),

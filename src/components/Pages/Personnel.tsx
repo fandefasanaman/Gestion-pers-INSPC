@@ -13,7 +13,10 @@ import {
   Edit,
   Trash2,
   MoreVertical,
-  Eye
+  Eye,
+  Hash,
+  User,
+  Briefcase
 } from 'lucide-react';
 import PersonnelForm from '../Forms/PersonnelForm';
 import PersonnelImport from '../Import/PersonnelImport';
@@ -57,6 +60,7 @@ const Personnel: React.FC = () => {
         const data = doc.data();
         return {
           id: doc.id,
+          numero: data.numero || '', // Inclure le numéro dans les données chargées
           firstName: data.prenoms || '',
           lastName: data.nom || '',
           email: data.email || '',
@@ -515,7 +519,7 @@ const Personnel: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">N°</label>
-                      <p className="text-sm text-gray-900">{viewingPersonnel.registrationNumber}</p>
+                      <p className="text-sm text-gray-900">{viewingPersonnel.numero || viewingPersonnel.registrationNumber}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
