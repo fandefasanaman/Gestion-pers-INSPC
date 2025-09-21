@@ -1,91 +1,102 @@
 import React from 'react';
 import { 
   Home, 
-  FileText, 
-  CheckCircle, 
-  Calendar, 
-  BarChart3, 
   Users, 
-  Settings,
-  X
+  FileText, 
+  CheckSquare, 
+  BarChart3, 
+  Settings, 
+  Building,
+  Bell,
+  LogOut
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 interface SidebarProps {
-  currentView: string;
-  onViewChange: (view: string) => void;
-  isOpen: boolean;
-  onClose: () => void;
+  currentPage: string;
+  onPageChange: (page: string) => void;
 }
 
-const navigation = [
-  { id: 'dashboard', name: 'Tableau de Bord', icon: Home, roles: ['personnel', 'chef_service', 'rh', 'admin'] },
-  { id: 'requests', name: 'Mes Demandes', icon: FileText, roles: ['personnel', 'chef_service', 'rh', 'admin'] },
-  { id: 'validations', name: 'Validations', icon: CheckCircle, roles: ['chef_service', 'rh', 'admin'] },
-  { id: 'planning', name: 'Planning', icon: Calendar, roles: ['personnel', 'chef_service', 'rh', 'admin'] },
-  { id: 'reports', name: 'Rapports', icon: BarChart3, roles: ['chef_service', 'rh', 'admin'] },
-  { id: 'personnel', name: 'Personnel', icon: Users, roles: ['rh', 'admin'] },
-  { id: 'settings', name: 'Paramètres', icon: Settings, roles: ['admin'] },
-];
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
+  const { user, logout } = useAuth();
 
-export default function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarProps) {
-  const { personnel } = useAuth();
-
-  const canAccess = (roles: string[]) => {
-    return personnel?.role && roles.includes(personnel.role);
-  };
+  const menuItems = [
+    { id: 'dashboard', label: 'Tableau de Bord', icon: Home },
+    { id: 'movements', label: 'Mes Mouvements', icon: FileText },
+    { id: 'personnel', label: 'Personnel', icon: Users },
+    ...(user?.role !== 'employee' ? [
+      { id: 'validations', label: 'Validations', icon: CheckSquare },
+      { id: 'reports', label: 'Rapports', icon: BarChart3 }
+    ] : []),
+    ...(user?.role === 'admin' ? [
+      { id: 'services', label: 'Services', icon: Building },
+      { id: 'settings', label: 'Paramètres', icon: Settings }
+    ] : []),
+    { id: 'notifications', label: 'Notifications', icon: Bell }
+  ];
 
   return (
-    <>
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ease-in-out
-        lg:translate-x-0 lg:static lg:inset-0
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 lg:hidden">
-          <span className="text-lg font-semibold text-gray-900">Menu</span>
-          <button onClick={onClose} className="p-2 rounded-md hover:bg-gray-100">
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
+    <aside className="w-64 bg-white shadow-lg h-full flex flex-col">
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <Building className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900">INSPC</h1>
+            <p className="text-sm text-gray-500">Gestion Personnel</p>
+          </div>
         </div>
+      </div>
 
-        <nav className="mt-8 px-4 space-y-2">
-          {navigation.map((item) => {
-            if (!canAccess(item.roles)) return null;
-            
+      <nav className="flex-1 p-4">
+        <ul className="space-y-2">
+          {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentView === item.id;
+            const isActive = currentPage === item.id;
             
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  onViewChange(item.id);
-                  onClose();
-                }}
-                className={`
-                  w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
-                  ${isActive 
-                    ? 'bg-purple-100 text-purple-900 border-r-2 border-purple-600' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                  }
-                `}
-              >
-                <Icon className={`mr-3 w-5 h-5 ${isActive ? 'text-purple-600' : 'text-gray-500'}`} />
-                {item.name}
-              </button>
+              <li key={item.id}>
+                <button
+                  onClick={() => onPageChange(item.id)}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-blue-700' : 'text-gray-400'}`} />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              </li>
             );
           })}
-        </nav>
+        </ul>
+      </nav>
+
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-medium text-sm">
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </span>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-900">{user?.firstName} {user?.lastName}</p>
+            <p className="text-xs text-gray-500">{user?.position}</p>
+          </div>
+        </div>
+        
+        <button
+          onClick={logout}
+          className="w-full flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+        >
+          <LogOut className="w-4 h-4 text-gray-400" />
+          <span className="text-sm">Déconnexion</span>
+        </button>
       </div>
-    </>
+    </aside>
   );
-}
+};
+
+export default Sidebar;

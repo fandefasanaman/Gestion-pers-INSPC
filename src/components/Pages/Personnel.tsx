@@ -1,0 +1,273 @@
+import React, { useState } from 'react';
+import { 
+  Users, 
+  Search, 
+  Filter, 
+  Plus, 
+  Mail, 
+  Phone,
+  Building,
+  UserCheck
+} from 'lucide-react';
+
+const Personnel: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedService, setSelectedService] = useState('all');
+
+  // Mock personnel data
+  const personnel = [
+    {
+      id: '1',
+      firstName: 'Dr. Jean',
+      lastName: 'ANDRIANO',
+      email: 'jean.andriano@inspc.mg',
+      phone: '+261 34 12 345 67',
+      position: 'Chef de Service',
+      service: 'Service Médical',
+      registrationNumber: 'MED001',
+      role: 'service_chief',
+      isActive: true,
+      joinDate: '2020-01-15'
+    },
+    {
+      id: '2',
+      firstName: 'Marie',
+      lastName: 'RAKOTO',
+      email: 'marie.rakoto@inspc.mg',
+      phone: '+261 34 23 456 78',
+      position: 'Responsable RH',
+      service: 'Ressources Humaines',
+      registrationNumber: 'RH001',
+      role: 'hr',
+      isActive: true,
+      joinDate: '2019-03-10'
+    },
+    {
+      id: '3',
+      firstName: 'Hery',
+      lastName: 'RASOLOFO',
+      email: 'hery.rasolofo@inspc.mg',
+      phone: '+261 34 34 567 89',
+      position: 'Technicien Médical',
+      service: 'Service Médical',
+      registrationNumber: 'MED002',
+      role: 'employee',
+      isActive: true,
+      joinDate: '2021-06-01'
+    },
+    {
+      id: '4',
+      firstName: 'Nivo',
+      lastName: 'RANDRIAMIARANA',
+      email: 'nivo.randriamiarana@inspc.mg',
+      phone: '+261 34 45 678 90',
+      position: 'Assistant Administratif',
+      service: 'Administration',
+      registrationNumber: 'ADM002',
+      role: 'employee',
+      isActive: true,
+      joinDate: '2022-02-15'
+    },
+    {
+      id: '5',
+      firstName: 'Lova',
+      lastName: 'RAMANAMPISOA',
+      email: 'lova.ramanampisoa@inspc.mg',
+      phone: '+261 34 56 789 01',
+      position: 'Infirmière',
+      service: 'Service Médical',
+      registrationNumber: 'MED003',
+      role: 'employee',
+      isActive: true,
+      joinDate: '2021-09-20'
+    }
+  ];
+
+  const services = [
+    'Service Médical',
+    'Ressources Humaines',
+    'Administration',
+    'Laboratoire',
+    'Pharmacie'
+  ];
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'Administrateur';
+      case 'hr':
+        return 'Ressources Humaines';
+      case 'service_chief':
+        return 'Chef de Service';
+      case 'employee':
+        return 'Employé';
+      default:
+        return 'Inconnu';
+    }
+  };
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'hr':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'service_chief':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'employee':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const filteredPersonnel = personnel.filter(person => {
+    const matchesSearch = 
+      person.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesService = selectedService === 'all' || person.service === selectedService;
+    
+    return matchesSearch && matchesService;
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Personnel</h1>
+        <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus className="w-4 h-4" />
+          <span>Nouveau Personnel</span>
+        </button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Rechercher par nom, email, matricule..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <select
+              value={selectedService}
+              onChange={(e) => setSelectedService(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="all">Tous les services</option>
+              {services.map((service) => (
+                <option key={service} value={service}>{service}</option>
+              ))}
+            </select>
+            
+            <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <Filter className="w-4 h-4" />
+              <span>Filtres</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Personnel Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {filteredPersonnel.map((person) => (
+          <div key={person.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold text-lg">
+                  {person.firstName[0]}{person.lastName[0]}
+                </span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">
+                  {person.firstName} {person.lastName}
+                </h3>
+                <p className="text-sm text-gray-600">{person.position}</p>
+              </div>
+              {person.isActive && (
+                <UserCheck className="w-5 h-5 text-green-500" />
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Mail className="w-4 h-4 text-gray-400" />
+                <a 
+                  href={`mailto:${person.email}`}
+                  className="text-sm text-blue-600 hover:text-blue-700 truncate"
+                >
+                  {person.email}
+                </a>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Phone className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600">{person.phone}</span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Building className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600">{person.service}</span>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(person.role)}`}>
+                  {getRoleLabel(person.role)}
+                </span>
+                <span className="text-xs text-gray-500">
+                  Matricule: {person.registrationNumber}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredPersonnel.length === 0 && (
+        <div className="text-center py-12">
+          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun personnel trouvé</h3>
+          <p className="text-gray-600">Essayez de modifier vos critères de recherche.</p>
+        </div>
+      )}
+
+      {/* Summary Stats */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Statistiques</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <p className="text-2xl font-bold text-blue-600">{personnel.length}</p>
+            <p className="text-sm text-blue-600">Total Personnel</p>
+          </div>
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <p className="text-2xl font-bold text-green-600">{personnel.filter(p => p.isActive).length}</p>
+            <p className="text-sm text-green-600">Personnel Actif</p>
+          </div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <p className="text-2xl font-bold text-purple-600">{services.length}</p>
+            <p className="text-sm text-purple-600">Services</p>
+          </div>
+          <div className="text-center p-4 bg-orange-50 rounded-lg">
+            <p className="text-2xl font-bold text-orange-600">{personnel.filter(p => p.role === 'service_chief').length}</p>
+            <p className="text-sm text-orange-600">Chefs Service</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Personnel;

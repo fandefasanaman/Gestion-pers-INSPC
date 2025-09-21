@@ -1,74 +1,106 @@
-export interface Personnel {
+export interface User {
   id: string;
-  nom: string;
-  prenoms: string;
-  im: string;
-  date_naissance: string;
-  lieu: string;
-  cin: string;
-  corps: string;
-  grade: string;
-  indice: number;
-  fonction: string;
-  date_entree_inspc: string;
   email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
   service: string;
-  chef_service: string;
-  actif: boolean;
-  role?: 'personnel' | 'chef_service' | 'rh' | 'admin';
+  position: string;
+  registrationNumber: string;
+  profileImage?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type UserRole = 'employee' | 'service_chief' | 'hr' | 'admin';
+
+export interface MovementRequest {
+  id: string;
+  personnelId: string;
+  type: MovementType;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  destination?: string;
+  documents: Document[];
+  status: MovementStatus;
+  validations: Validation[];
+  createdAt: string;
+  updatedAt: string;
+  urgency: 'low' | 'medium' | 'high';
+  budgetEstimate?: number;
 }
 
 export type MovementType = 
-  | 'conge' 
-  | 'mission' 
-  | 'permission_absence' 
-  | 'autorisation_absence' 
-  | 'convalescence' 
-  | 'hospitalise' 
-  | 'formation' 
-  | 'repos_maladie';
+  | 'leave' // Congé
+  | 'mission' // Mission
+  | 'training' // Formation
+  | 'transfer' // Mutation
+  | 'delegation' // Délégation
+  | 'sick_leave' // Congé maladie
+  | 'maternity_leave' // Congé maternité
+  | 'other'; // Autre
 
 export type MovementStatus = 
-  | 'brouillon' 
-  | 'soumise' 
-  | 'en_cours' 
-  | 'approuvee' 
-  | 'rejetee';
+  | 'draft' // Brouillon
+  | 'submitted' // Soumise
+  | 'pending_service_chief' // En attente chef service
+  | 'pending_hr' // En attente RH
+  | 'pending_admin' // En attente admin
+  | 'approved' // Approuvée
+  | 'rejected' // Rejetée
+  | 'cancelled' // Annulée
+  | 'completed'; // Terminée
 
-export interface Movement {
+export interface Validation {
   id: string;
-  personnel_id: string;
-  type: MovementType;
-  date_debut: string;
-  date_fin: string;
-  motif: string;
-  justification: string;
-  piece_jointe?: string[];
-  statut: MovementStatus;
-  demande_par: string;
-  date_demande: string;
-  validation_hierarchie?: {
-    valide_par?: string;
-    date_validation?: string;
-    commentaire?: string;
-    statut: 'en_attente' | 'approuve' | 'rejete';
-  };
-  validation_rh?: {
-    valide_par?: string;
-    date_validation?: string;
-    commentaire?: string;
-    statut: 'en_attente' | 'approuve' | 'rejete';
-  };
-  personnel?: Personnel;
+  validatorId: string;
+  validatorRole: UserRole;
+  status: 'pending' | 'approved' | 'rejected';
+  comment?: string;
+  validatedAt?: string;
+  order: number;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
 }
 
 export interface Notification {
   id: string;
-  destinataire_id: string;
-  type: string;
-  titre: string;
+  userId: string;
+  type: 'movement_created' | 'validation_request' | 'status_updated' | 'deadline_approaching';
+  title: string;
   message: string;
-  mouvement_id?: string;
-  lu: boolean;
-  date_creation: string;
+  isRead: boolean;
+  createdAt: string;
+  relatedMovementId?: string;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  description: string;
+  chiefId: string;
+  employeeCount: number;
+}
+
+export interface DashboardStats {
+  totalMovements: number;
+  pendingMovements: number;
+  approvedMovements: number;
+  rejectedMovements: number;
+  activePersonnel: number;
+  monthlyTrends: {
+    month: string;
+    movements: number;
+    approvals: number;
+  }[];
 }
