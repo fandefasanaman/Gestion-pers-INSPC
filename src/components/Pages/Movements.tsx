@@ -12,7 +12,7 @@ import {
   FileText
 } from 'lucide-react';
 import { useMovements } from '../../hooks/useMovements';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 import { MovementType } from '../../types';
 import MovementForm from '../Forms/MovementForm';
 

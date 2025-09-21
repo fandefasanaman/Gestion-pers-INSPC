@@ -10,7 +10,7 @@ import {
   Send
 } from 'lucide-react';
 import { MovementType, MovementRequest } from '../../types';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 import { useMovements } from '../../hooks/useMovements';
 
 interface MovementFormProps {

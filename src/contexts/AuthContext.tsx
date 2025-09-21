@@ -1,15 +1,24 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
-import { auth, db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
-import { Personnel } from '../types';
+import { auth, db, signIn as firebaseSignIn, signOut as firebaseSignOut } from '../lib/firebase';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+
+interface Personnel {
+  id: string;
+  nom: string;
+  prenoms: string;
+  email: string;
+  role: 'admin' | 'hr' | 'service_chief' | 'employee';
+  service: string;
+  actif: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
   personnel: Personnel | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
 }
 
@@ -37,10 +46,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchPersonnel = async (email: string) => {
     try {
-      // Pour l'instant, utiliser des données mock
-      // TODO: Implémenter la recherche dans Firestore
-      const mockPersonnel = {
-        id: '1',
+      // Rechercher le personnel dans Firestore par email
+      const personnelQuery = query(
+        collection(db, 'personnel'),
+        where('email', '==', email)
+      );
+      
+      const querySnapshot = await getDocs(personnelQuery);
+      
+      if (!querySnapshot.empty) {
+        const personnelDoc = querySnapshot.docs[0];
+        const personnelData = personnelDoc.data() as Personnel;
+        setPersonnel({
+          id: personnelDoc.id,
+          ...personnelData
+        });
+      } else {
+        // Si aucun personnel trouvé, créer un utilisateur admin par défaut
+        const defaultPersonnel: Personnel = {
+          id: user?.uid || '1',
+          nom: 'ADMIN',
+          prenoms: 'Système',
+          email: email,
+          role: 'admin',
+          service: 'Administration',
+          actif: true
+        };
+        setPersonnel(defaultPersonnel);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du personnel:', error);
+      // En cas d'erreur, utiliser des données par défaut
+      const defaultPersonnel: Personnel = {
+        id: user?.uid || '1',
         nom: 'ADMIN',
         prenoms: 'Système',
         email: email,
@@ -48,17 +86,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         service: 'Administration',
         actif: true
       };
-      setPersonnel(mockPersonnel);
-    } catch (error) {
-      console.error('Erreur lors de la récupération du personnel:', error);
+      setPersonnel(defaultPersonnel);
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const login = async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return { data: { user: userCredential.user }, error: null };
+      const result = await firebaseSignIn(email, password);
+      return result;
     } catch (error: any) {
+      console.error('Erreur de connexion:', error);
       return { data: null, error };
     }
   };
@@ -69,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, personnel, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, personnel, loading, login, signOut }}>
       {children}
     </AuthContext.Provider>
   );

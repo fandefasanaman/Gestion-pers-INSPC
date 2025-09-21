@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bell, Search, User } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Header: React.FC = () => {
   const { user } = useAuth();

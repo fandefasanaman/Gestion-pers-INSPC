@@ -13,7 +13,7 @@ import {
   Search
 } from 'lucide-react';
 import { useMovements } from '../../hooks/useMovements';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 import { MovementRequest, MovementStatus } from '../../types';
 
 const Validations: React.FC = () => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Building, Eye, EyeOff, Lock, Mail } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -15,13 +15,27 @@ const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setLoading(true);
+    setError('');
 
     try {
       const result = await login(email, password);
       if (result.error) {
-        setError('Identifiants invalides');
+        console.error('Erreur de connexion:', result.error);
+        if (result.error.code === 'auth/user-not-found') {
+          setError('Aucun compte trouvé avec cet email');
+        } else if (result.error.code === 'auth/wrong-password') {
+          setError('Mot de passe incorrect');
+        } else if (result.error.code === 'auth/invalid-email') {
+          setError('Format d\'email invalide');
+        } else if (result.error.code === 'auth/too-many-requests') {
+          setError('Trop de tentatives. Réessayez plus tard');
+        } else {
+          setError('Erreur de connexion. Vérifiez vos identifiants');
+        }
       }
     } catch (err) {
+      console.error('Erreur inattendue:', err);
       setError('Erreur de connexion');
     } finally {
       setLoading(false);
@@ -139,7 +153,10 @@ const Login: React.FC = () => {
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-blue-800">Authentification Firebase</h3>
                 <p className="text-sm text-blue-700 mt-1">
-                  Utilisez vos identifiants Firebase pour vous connecter au système INSPC.
+                  Créez un compte ou utilisez vos identifiants pour vous connecter.
+                </p>
+                <p className="text-xs text-blue-600 mt-2">
+                  Test: admin@inspc.mg / password123
                 </p>
               </div>
             </div>
